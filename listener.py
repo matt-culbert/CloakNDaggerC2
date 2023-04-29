@@ -29,13 +29,12 @@ def home():
         # If we receive special characters just drop it entirely
         pass
     else:
-        # I want to add a way to add the date here...
-        # As well as last check in date
-        # Lets convert the command struct to a JSON object
+        # Let's convert the command struct to a JSON object
         structure = {
             "Command": "whoami",
             "LastInteraction": "0",
-            "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}"
+            "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
+            "Result": "0"
         }
         structure = json.dumps(structure)  # Dump the json
         # Write the message value to the beacon:UUID key
@@ -53,39 +52,61 @@ def session():
             # If we receive special characters just drop it entirely
             pass
         else:
-            command = conn.hget('UUID', uuid)  # Get the struct
-            command = command.decode()  # Decode it from bytes
-            command = json.loads(command)  # it's returned as string so convert it to dict
-            structure = json.dumps(command)  # Dump the dict to json
-            comm = json.loads(structure)  # Load it into a new var
-            Command = comm["Command"]  # Grab the command var from the object
-            LastInteraction = comm["LastInteraction"]
-            # Set the command to 0
-            structure = {
-                "Command": "0",
-                "LastInteraction": f"{LastInteraction}",
-                "LastCheckIn": f"{str(datetime.today().strftime('%Y-%m-%d %H:%M:%S'))}"
-            }
-            structure = json.dumps(structure)  # Dump the json
-            # Write the message value to the beacon:UUID key
-            conn.hset('UUID', uuid, structure)
-            return Command
+            try:
+                command = conn.hget('UUID', uuid)  # Get the struct
+                command = command.decode()  # Decode it from bytes
+                command = json.loads(command)  # it's returned as string so convert it to dict
+                structure = json.dumps(command)  # Dump the dict to json
+                comm = json.loads(structure)  # Load it into a new var
+                Command = comm["Command"]  # Grab the command var from the object
+                LastInteraction = comm["LastInteraction"]
+                Res = comm["Result"]
+                # Set the command to 0
+                structure = {
+                    "Command": "0",
+                    "LastInteraction": f"{LastInteraction}",
+                    "LastCheckIn": f"{str(datetime.today().strftime('%Y-%m-%d %H:%M:%S'))}",
+                    "Result": f"{Res}"
+                }
+                structure = json.dumps(structure)  # Dump the json
+                # Write the message value to the beacon:UUID key
+                conn.hset('UUID', uuid, structure)
+                return Command
+            except:
+                structure = {
+                    "Command": "whoami",
+                    "LastInteraction": "0",
+                    "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
+                    "Result": "0"
+                }
+                structure = json.dumps(structure)  # Dump the json
+                # Write the message value to the beacon:UUID key
+                conn.hset('UUID', uuid, structure)
+                return ('')
 
 
-@app.route("/schema", methods=['POST'])
+@app.route("/schema", methods=['GET'])
 def schema():
     # This function handles beacons returning data
-    if request.method == 'POST':
-        uuid = request.headers['APPSESSIONID']
-        if set(uuid).difference(string.ascii_letters + string.digits):
-            # We're not going to bother with input sanitization here
-            # If we receive special characters just drop it entirely
-            pass
-        else:
-            # We should expect data returned to be encrypted
-            # So let's handle decrypting it
-            # Maybe use a hash of the UUID as the key??
-            return 'HELO'
+    # Grab the appsessionid value from the headers
+    uuid = request.headers['APPSESSIONID']
+    result = request.headers['RES']
+    if set(uuid).difference(string.ascii_letters + string.digits):
+        # We're not going to bother with input sanitization here
+        # If we receive special characters just drop it entirely
+        pass
+    else:
+        # Let's convert the command struct to a JSON object
+        structure = {
+            "Command": "whoami",
+            "LastInteraction": "0",
+            "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
+            "Result": f"{result}"
+        }
+        structure = json.dumps(structure)  # Dump the json
+        # Write the message value to the beacon:UUID key
+        conn.hset('UUID', uuid, structure)
+        return ('')
 
 
 def serve():
