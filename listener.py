@@ -10,14 +10,16 @@
 from datetime import datetime
 from flask import *
 import json
-import redis  # Make sure to install and start the redis server
-# sudo systemctl start redis-server.service
+import redis
+import logging
 import string
 
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
 print('test')
 conn.mset({"test": "test1"})
 app = Flask(__name__)
+log = logging.getLogger('werkzeug')
+log.disabled = True
 
 
 @app.route("/")
