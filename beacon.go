@@ -33,7 +33,7 @@ func main() {
 	fmt.Printf(toSend)
 
 	//time.Sleep(10)
-	req, err := http.NewRequest("GET", "http://localhost:8000/schema", nil)
+	req, err := http.NewRequest("GET", "http://localhost:8000/", nil)
 	req.Header = http.Header{"APPSESSIONID": {uuid},"Res": {toSend},"User-Agent": {"testing testing"}}
 	resp, err := client.Do(req)
 
@@ -50,6 +50,7 @@ func main() {
 		req.Header.Add("APPSESSIONID", uuid)
 		resp, err = client.Do(req)
 		body, err := ioutil.ReadAll(resp.Body)
+		statusC := resp.Status
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -66,6 +67,23 @@ func main() {
 				log.Fatalln(err)
 			}
 			sb = string(body)
+		}
+		// This is trying to fix the issue of getting 500 status codes
+		// when the DB is cleared
+		// 
+		statusC = string(statusC)
+		fmt.Printf(statusC)
+		for statusC == "500"{
+			time.Sleep(2 * time.Second)
+			req, err = http.NewRequest("GET", "http://localhost:8000/session", nil)
+			req.Header.Add("APPSESSIONID", uuid)
+			resp, err = client.Do(req)
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			sb = string(body)
+			statusC = resp.Status
 		}
 		fmt.Printf(sb)
 
