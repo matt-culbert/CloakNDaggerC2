@@ -1,2 +1,3 @@
 staging*
 *.pem
+.DS_Store
