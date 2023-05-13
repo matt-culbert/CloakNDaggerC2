@@ -7,6 +7,7 @@ import cryptography.exceptions
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
+import binascii
 
 # Needs a function to wipe the db and make all active beacons check in again
 
@@ -53,22 +54,21 @@ while True:
         LastInteraction = connector["LastInteraction"]
         whoami = connector["WhoAmI"]
         result = connector["Result"]
-        signed_inp = bytes(cm, 'utf-8')
+        byte_inp = bytes(cm, 'utf-8')
 
         with open('keys/' + "test_priv" + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
             private_key = serialization.load_pem_private_key(key_file.read(), password=None)
-        signature = private_key.sign(signed_inp, padding.PKCS1v15(), hashes.SHA1())
-        #signature_decoded = binascii.b2a_hex(signature).decode()
+        signature = private_key.sign(byte_inp, padding.PKCS1v15(), hashes.SHA256())
+        signature_decoded = binascii.b2a_hex(signature).decode()
 
-        #signature_bytes = bytes(signature_decoded, 'utf-8')
         with open('keys/' + "test_pub" + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
             public_key = serialization.load_pem_public_key(key_file.read())
         try:
             public_key.verify(
                 signature,
-                signed_inp,
+                byte_inp,
                 padding.PKCS1v15(),
-                hashes.SHA1()
+                hashes.SHA256()
             )
         except cryptography.exceptions.InvalidSignature as e:
             print('ERROR: Payload and/or signature files failed verification!')
