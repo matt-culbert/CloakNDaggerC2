@@ -14,6 +14,7 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/sha1"
+	"encoding/base64"
 )
 
 func main() {
@@ -65,7 +66,9 @@ func main() {
 		}
 
 		//Convert the body to type string
-		sb := string(body)
+		encoded := string(body)
+		sb,_ := base64.StdEncoding.DecodeString(encoded)
+		sb = string(sb)
 		for sb == "0"{
 			time.Sleep(2 * time.Second)
 			req, err = http.NewRequest("GET", "http://localhost:8000/session", nil)
@@ -80,15 +83,17 @@ func main() {
 		// After verifying we have a command to execute, we now need to grab the commands signature
 		// This is stored in a header value of the request
 		rawSignature := resp.Header.Get("Verifier")
-		fmt.Printf(rawSignature)
+		b64_sig,_ := base64.StdEncoding.DecodeString(rawSignature)
+		fmt.Printf(b64_sig)
 		signature := []byte(rawSignature)
 		//signature, err = base64.StdEncoding.DecodeString(rawSignature)
-		hash := sha1.Sum(body)
-		h := hash[:]
-		//h := sha1.New()
-    	//h.Write([]byte(body))
+		//hash := sha1.Sum(sb)
+		//h := hash[:]
+		h := sha1.New()
+    	h.Write([]byte(sb))
 		//err = rsa.VerifyPKCS1v15(key.(*rsa.PublicKey), crypto.SHA1, h.Sum(nil), signature)
-		err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA1, h, signature)
+		// The issue was PSS vs PKCS1v15
+		err = rsa.VerifyPKCS1v15(publicKey, crypto.SHA1, h.Sum(nil), signature)
 		if err != nil {
 			fmt.Println(err)
 			return
