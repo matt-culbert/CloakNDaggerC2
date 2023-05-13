@@ -1,12 +1,12 @@
+import base64
 import subprocess
 import redis
 from datetime import datetime, time
 import json
-from cryptography.hazmat.primitives.asymmetric import rsa
+import cryptography.exceptions
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
-import sys
 import binascii
 
 # Needs a function to wipe the db and make all active beacons check in again
@@ -42,52 +42,71 @@ while True:
     inp = input('> ')
     if inp == '1':
         uuid = input('UUID: ')
-        while inp != "exit":  # If the input is exit, break the loop
-            inp = input('> ')
-            # I want to preserve the current last check in time
-            # so dump the DB and grab that field
+        #while inp != "exit":  # If the input is exit, break the loop
+        cm = input('Command: ')
+        # I want to preserve the current last check in time
+        # so dump the DB and grab that field
+        dt = conn.hget('UUID', uuid)  # Get the struct
+        dt = dt.decode()  # Decode it from bytes
+        lastcheckin = json.loads(dt)  # it's returned as string so convert it to dict
+        structure = json.dumps(lastcheckin)  # Dump the dict to json
+        connector = json.loads(structure)  # Load it into a new var
+        LastInteraction = connector["LastInteraction"]
+        whoami = connector["WhoAmI"]
+        result = connector["Result"]
+        signed_inp = bytes(cm, 'utf-8')
+
+        with open('keys/' + "test_priv" + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
+            private_key = serialization.load_pem_private_key(key_file.read(), password=None)
+        signature = private_key.sign(signed_inp, padding.PSS(mgf=padding.MGF1(hashes.SHA1()),
+                                                          salt_length=padding.PSS.MAX_LENGTH), hashes.SHA1())
+        #signature_decoded = binascii.b2a_hex(signature).decode()
+
+        #signature_bytes = bytes(signature_decoded, 'utf-8')
+        with open('keys/' + "test_pub" + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
+            public_key = serialization.load_pem_public_key(key_file.read())
+        try:
+            public_key.verify(
+                signature,
+                signed_inp,
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA1()),
+                    salt_length=padding.PSS.MAX_LENGTH,
+                ),
+                hashes.SHA1(),
+            )
+        except cryptography.exceptions.InvalidSignature as e:
+            print('ERROR: Payload and/or signature files failed verification!')
+            break
+
+        structure = {
+            "WhoAmI": f"{whoami}",
+            "Signature": f"{signature}",
+            "Retrieved": "1",  # Set retrieved to 1 so we know we got results
+            "Command": f"{signed_inp}",
+            "LastInteraction": f"{LastInteraction}",
+            "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
+            "Result": f"{result}",
+            "GotIt": "0"
+        }
+        structure = json.dumps(structure)  # Dump the json
+        # Write the message value to the beacon:UUID key
+        conn.hset('UUID', uuid, structure)
+        print("Set command... \n")
+        # Await the beacon retrieving the command
+        # Check the db for an update value
+        canWeDisplay = connector["GotIt"]
+        print("Waiting for returned data... \n")
+        while canWeDisplay == "0":
+            # We have to refresh the DB connectors to get updated results it seems
             dt = conn.hget('UUID', uuid)  # Get the struct
             dt = dt.decode()  # Decode it from bytes
             lastcheckin = json.loads(dt)  # it's returned as string so convert it to dict
             structure = json.dumps(lastcheckin)  # Dump the dict to json
             connector = json.loads(structure)  # Load it into a new var
-            LastInteraction = connector["LastInteraction"]
-            whoami = connector["WhoAmI"]
-            result = connector["Result"]
-            signed_inp = bytes(inp, 'utf-8')
-            with open('keys/'+uuid + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
-                private_key = serialization.load_pem_private_key(key_file.read(), password=None)
-            signature = private_key.sign(signed_inp, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
-                                                              salt_length=padding.PSS.MAX_LENGTH), hashes.SHA256())
-            signature = binascii.b2a_hex(signature).decode()
-            structure = {
-                "WhoAmI": f"{whoami}",
-                "Signature": f"{signature}",
-                "Retrieved": "1",  # Set retrieved to 1 so we know we got results
-                "Command": f"{inp}",
-                "LastInteraction": f"{LastInteraction}",
-                "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
-                "Result": f"{result}",
-                "GotIt": "0"
-            }
-            structure = json.dumps(structure)  # Dump the json
-            # Write the message value to the beacon:UUID key
-            conn.hset('UUID', uuid, structure)
-            print("Set command... \n")
-            # Await the beacon retrieving the command
-            # Check the db for an update value
             canWeDisplay = connector["GotIt"]
-            print("Waiting for returned data... \n")
-            while canWeDisplay == "0":
-                # We have to refresh the DB connectors to get updated results it seems
-                dt = conn.hget('UUID', uuid)  # Get the struct
-                dt = dt.decode()  # Decode it from bytes
-                lastcheckin = json.loads(dt)  # it's returned as string so convert it to dict
-                structure = json.dumps(lastcheckin)  # Dump the dict to json
-                connector = json.loads(structure)  # Load it into a new var
-                canWeDisplay = connector["GotIt"]
-            result = connector["Result"]
-            print(result)
+        result = connector["Result"]
+        print(result)
 
     elif inp == '2':
         uuid = input('UUID: ')
