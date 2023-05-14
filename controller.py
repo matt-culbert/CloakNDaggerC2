@@ -58,7 +58,11 @@ while True:
 
         with open('keys/' + "test_priv" + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
             private_key = serialization.load_pem_private_key(key_file.read(), password=None)
-        signature = private_key.sign(byte_inp, padding.PKCS1v15(), hashes.SHA256())
+        signature = private_key.sign(
+            byte_inp,
+            padding.PKCS1v15(),
+            hashes.SHA1()
+        )
         signature_decoded = binascii.b2a_hex(signature).decode()
 
         with open('keys/' + "test_pub" + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
@@ -68,15 +72,16 @@ while True:
                 signature,
                 byte_inp,
                 padding.PKCS1v15(),
-                hashes.SHA256()
+                hashes.SHA1()
             )
         except cryptography.exceptions.InvalidSignature as e:
             print('ERROR: Payload and/or signature files failed verification!')
             break
-
+        print(signature_decoded)
+        b = base64.b64encode(signature)
         structure = {
             "WhoAmI": f"{whoami}",
-            "Signature": f"{signature}",
+            "Signature": f"{signature_decoded}",
             "Retrieved": "1",  # Set retrieved to 1 so we know we got results
             "Command": f"{cm}",
             "LastInteraction": f"{LastInteraction}",

