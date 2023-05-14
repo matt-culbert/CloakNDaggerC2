@@ -61,7 +61,7 @@ while True:
         signature = private_key.sign(
             byte_inp,
             padding.PKCS1v15(),
-            hashes.SHA1()
+            hashes.SHA256()
         )
         signature_decoded = binascii.b2a_hex(signature).decode()
 
@@ -72,7 +72,7 @@ while True:
                 signature,
                 byte_inp,
                 padding.PKCS1v15(),
-                hashes.SHA1()
+                hashes.SHA256()
             )
         except cryptography.exceptions.InvalidSignature as e:
             print('ERROR: Payload and/or signature files failed verification!')
