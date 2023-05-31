@@ -1,8 +1,6 @@
-# SwitchBladev3
+# Cloak & Dagger
 
-3rd times the charm right?
-
-Insetad of using HTML files, we're just doing everything in redis.
+This is an evolution of the original Switchblade C2. Cloak refers to the C2 backend, hiding behind an mTLS reverse proxy, and Dagger is the implant which utilizes syscalls for command execution.
 
 Run redis in a Docker container with ```docker run --name redis -p 6379:6379 -d redis```
 
