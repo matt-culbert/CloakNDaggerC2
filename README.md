@@ -9,4 +9,7 @@ Todo:
 - [ ] Generate shellcode from the controller by adding ```go build -buildmode=pie -o shellcode.bin .\beacon.go```
 - [ ] Add a way to change the config of the beacon
 - [ ] Add RSA key gen to builder. This will be needed for the reverse proxy as well
-- [ ] Implement ChaCha20 stream cipher for the public key and other sensitive strings
+- [ ] XOR enc IP
+- [ ] Clean up the usability from the console
+- [ ] RSA encrypt results of command execution with public key
+- [ ] XOR enc incoming commands with a pre shared secret, possibly the public key??
