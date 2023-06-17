@@ -9,10 +9,10 @@ When you run a command, you need to specify the UUID of the implant every time. 
 ![example](/img/guide/example.png)
 
 Current commands:
-- '''pwd''' gets the current working directory
-- '''gcu''' gets the current user
-- '''rc''' runs a command through the terminal, this can be anything (Still working on making commands work that are more than one word. So '''whoami''' works fine but '''cat /etc/passwd''' has issues
-- '''rd''' reads the supplied directory. Use it with '''rd <directory path>'''
+- ```pwd``` gets the current working directory
+- ```gcu``` gets the current user
+- ```rc``` runs a command through the terminal, this can be anything (Still working on making commands work that are more than one word. So '''whoami''' works fine but '''cat /etc/passwd''' has issues
+- ```rd``` reads the supplied directory. Use it with '''rd <directory path>'''
 
 
 Todo: 
