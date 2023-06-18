@@ -132,7 +132,7 @@ def schema():
 
 
 def serve():
-    app.run(host="localhost", port=8000)  # ssl_context='adhoc')
+    app.run(host="192.168.1.179", port=8000)  # ssl_context='adhoc')
 
 
 if __name__ == "__main__":

@@ -41,9 +41,19 @@ while True:
     # If retrieved is 0, then don't display. If it's 1, display the result and then reset to 0
     inp = input('> ')
     if inp == '1':
+        print('Commands possible: \n'
+              'pwd      - get the current working directory \n'
+              'gcu      - get the current user \n'
+              'rc       - run a single command \n'
+              'rd       - read a directory \n'
+              'terminal - Enter only terminal here and the command in the following prompt \n')
         uuid = input('UUID: ')
         #while inp != "exit":  # If the input is exit, break the loop
-        cm = input('Command: ')
+        choice = input('Command: ')
+        choice = choice.lower()
+        if choice == "terminal":
+            cm = input('Enter terminal command: ')
+        else: cm = choice
         # I want to preserve the current last check in time
         # so dump the DB and grab that field
         dt = conn.hget('UUID', uuid)  # Get the struct
@@ -119,7 +129,8 @@ while True:
         # print(conn.keys()) # UUID is the key but we want values from the key
         print(conn.hgetall('UUID'))  # We're searching by hash values here
     else:
-        print('(1)Enter session \n '
+        print('\n '
+              '(1)Enter session \n '
               '(2)Search by UUID \n '
               '(3)Clear DB \n '
               '(4)Start a listener \n '
