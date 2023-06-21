@@ -222,7 +222,7 @@ func main() {
 		fmt.Printf(toSend)
 		toSend = strings.Replace(toSend, "\n", "", -1)
 		fmt.Printf(toSend)
-		enc_send := chacha("key", toSend)
+		enc_send := chacha(pubKeyPEM, toSend)
 		to_send_string := string(enc_send[:])
 		to_send_string = base64.StdEncoding.EncodeToString([]byte(to_send_string))
 		fmt.Printf(to_send_string)
