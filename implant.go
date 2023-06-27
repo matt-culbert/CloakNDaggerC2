@@ -28,15 +28,6 @@ func chacha(pass string, msg string) (enc_block []byte) {
 	key := sha256.Sum256([]byte(pass))
 	aead, _ := chacha20poly1305.NewX(key[:])
 
-	if pass == "" {
-		a := make([]byte, 32)
-		copy(key[:32], a[:32])
-		aead, _ = chacha20poly1305.NewX(a)
-	}
-	if msg == "" {
-		a := make([]byte, 32)
-		msg = string(a)
-	}
 	nonce := make([]byte, chacha20poly1305.NonceSizeX)
 	enc_block = aead.Seal(nil, nonce, []byte(msg), nil)
 	return
@@ -222,7 +213,7 @@ func main() {
 		fmt.Printf(toSend)
 		toSend = strings.Replace(toSend, "\n", "", -1)
 		fmt.Printf(toSend)
-		enc_send := chacha(pubKeyPEM, toSend)
+		enc_send := chacha("5\xd8c\x8d\xcd-\x9fR\xaa\x11\xe0\xcc\x19\x1a\xbe<\xeb\x84\xd8\x8a9\x03\x15\xcd\x08Ib\xfb_\xb5\xaa\xb0", toSend)
 		to_send_string := string(enc_send[:])
 		to_send_string = base64.StdEncoding.EncodeToString([]byte(to_send_string))
 		fmt.Printf(to_send_string)

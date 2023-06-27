@@ -7,7 +7,9 @@ import cryptography.exceptions
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 import binascii
+import os
 
 # Needs a function to wipe the db and make all active beacons check in again
 
@@ -17,6 +19,14 @@ conn = redis.StrictRedis(host='localhost', port=6379, db=0)
 def clearDB():
     for key in conn.scan_iter("*"):
         conn.delete(key)
+
+
+def deCrypt(key, message):
+    nonce = os.urandom(12)
+    chacha = ChaCha20Poly1305(key)
+    print('Decrypting')
+    decrypted_data = chacha.decrypt(nonce, message, b'')
+    return decrypted_data
 
 
 def searchUUID(uuid):
@@ -116,7 +126,10 @@ while True:
             connector = json.loads(structure)  # Load it into a new var
             canWeDisplay = connector["GotIt"]
         result = connector["Result"]
-        print(result)
+        #print(result)
+        #result = base64.decode(result)
+        result = bytes(result, 'utf-8')
+        print(deCrypt(b"5\xd8c\x8d\xcd-\x9fR\xaa\x11\xe0\xcc\x19\x1a\xbe<\xeb\x84\xd8\x8a9\x03\x15\xcd\x08Ib\xfb_\xb5\xaa\xb0", result))
 
     elif inp == '2':
         uuid = input('UUID: ')
