@@ -25,11 +25,9 @@ try:
   with open("keys/test/test_priv.pem", "rb") as key_file:
     private_key = serialization.load_pem_private_key(key_file.read(), password=None)
 
-  pub = private_key.public_key()
-
   with open("keys/test/test_pub.pem", "wb") as public_file:
-    public_file.write(pub)
+    public_file.write(pem_public_key)
 
-except:
-  pass
+except Exception as e:
+  print(e)
 
