@@ -14,6 +14,8 @@ Current commands:
 - ```rc``` runs a command through the terminal, this can be anything (Still working on making commands work that are more than one word. So '''whoami''' works fine but '''cat /etc/passwd''' has issues
 - ```rd``` reads the supplied directory. Use it with '''rd <directory path>'''
 
+To generate keys, run the ```crypto.py``` app and copy the public key PEM contents into the implant.go file
+
 
 Todo: 
 
