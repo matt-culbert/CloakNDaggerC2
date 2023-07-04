@@ -14,13 +14,20 @@ Current commands:
 - ```rc``` runs a command through the terminal, this can be anything (Still working on making commands work that are more than one word. So '''whoami''' works fine but '''cat /etc/passwd''' has issues
 - ```rd``` reads the supplied directory. Use it with '''rd <directory path>'''
 
-To generate keys, run the ```crypto.py``` app and copy the public key PEM contents into the implant.go file
+To generate keys, run the ```crypto.py``` app and copy the public key PEM contents into the implant.go file.
 
+### Known issues:
+On Kali, change the redis host in the controller and listener to 127.0.0.1 from localhost.
 
-Todo: 
+### Todo: 
 
+Core items:
 - [ ] Generate shellcode from the controller by adding ```go build -buildmode=pie -o shellcode.bin .\beacon.go```
 - [ ] Add a way to change the config of the beacon
+- [ ] The builder should generate each key pair and name them after the generated UUID
+- [ ] When the builder is finished, update the controller to lookup keys by UUID instead of "test"
+
+Reach items:
 - [ ] Add RSA key gen to builder. This will be needed for the reverse proxy as well
 - [ ] XOR enc IP
 - [ ] Clean up the usability from the console
