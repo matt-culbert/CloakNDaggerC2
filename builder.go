@@ -9,6 +9,8 @@ import (
 	"os"
 	"os/exec"
 	"text/template"
+
+	"github.com/manifoldco/promptui"
 )
 
 var (
@@ -22,8 +24,9 @@ type appValues struct {
 }
 
 func main() {
-	if len(os.Args) < 5:
+	if len(os.Args) < 5 {
 		fmt.Printf("Not enough arguments. Need platform, architecture, callback URL, and output file name \n")
+	}
 	mydir, _ := os.Getwd()
 	var (
 		err       error
@@ -32,7 +35,7 @@ func main() {
 	)
 
 	values := appValues{}
-	fmt.Printf("Welcome to the Sample Generator App")
+	fmt.Printf("Welcome to the Sample Generator App \n")
 
 	values.CallBack = os.Args[4]
 	values.AppName = os.Args[3]
