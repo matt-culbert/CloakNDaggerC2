@@ -24,7 +24,8 @@ type appValues struct {
 }
 
 func main() {
-	if len(os.Args) < 5 {
+	argLength := len(os.Args[1:])
+	if argLength < 4 {
 		fmt.Printf("Not enough arguments. Need platform, architecture, callback URL, and output file name \n")
 	}
 	mydir, _ := os.Getwd()
