@@ -23,7 +23,7 @@ On Kali, change the redis host in the controller and listener to 127.0.0.1 from 
 
 Core items:
 - [ ] Generate shellcode from the controller by adding ```go build -buildmode=pie -o shellcode.bin .\beacon.go```
-- [ ] Add a way to change the config of the beacon
+- [x] Add a way to change the config of the beacon | Builder is working. Now to generate UUID and public/private key pair and add these to the generated beacon
 - [ ] The builder should generate each key pair and name them after the generated UUID
 - [ ] When the builder is finished, update the controller to lookup keys by UUID instead of "test"
 
