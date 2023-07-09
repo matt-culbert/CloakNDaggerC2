@@ -12,21 +12,70 @@ import binascii
 import os
 
 # Needs a function to wipe the db and make all active beacons check in again
-
+# Right now when the database is wiped, the beacons will not check in again
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
-
+key =  b'12345678901234567890123456789012'  # A 256 bit (32 byte) key
 
 def clearDB():
     for key in conn.scan_iter("*"):
         conn.delete(key)
 
+def decrypt_message(key, ciphertext, nonce):
+    backend = default_backend()
+    salt = b'salt'  # Salt used for key derivation
 
-def deCrypt(key, message):
-    nonce = os.urandom(12)
-    chacha = ChaCha20Poly1305(key)
-    print('Decrypting')
-    decrypted_data = chacha.decrypt(nonce, message, b'')
-    return decrypted_data
+    # Derive a 256-bit encryption key using PBKDF2
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000,
+        backend=backend
+    )
+    key = kdf.derive(key)
+
+    # Create a XChaCha20-Poly1305 cipher object
+    cipher = Cipher(
+        algorithms.XChaCha20(key, nonce),
+        mode=None,
+        backend=backend
+    )
+    decryptor = cipher.decryptor()
+
+    # Decrypt the ciphertext
+    plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+
+    return plaintext
+
+def encrypt_message(key, plaintext):
+    backend = default_backend()
+    salt = b'salt'  # Salt used for key derivation
+
+    # Derive a 256-bit encryption key using PBKDF2
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000,
+        backend=backend
+    )
+    key = kdf.derive(key)
+
+    # Generate a random nonce
+    nonce = backend.random(bytes(algorithms.XChaCha20.NONCE_SIZE))
+
+    # Create a XChaCha20-Poly1305 cipher object
+    cipher = Cipher(
+        algorithms.XChaCha20(key, nonce),
+        mode=None,
+        backend=backend
+    )
+    encryptor = cipher.encryptor()
+
+    # Encrypt the plaintext
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+
+    return ciphertext, nonce
 
 
 def searchUUID(uuid):
@@ -98,7 +147,10 @@ while True:
             print('ERROR: Payload and/or signature files failed verification!')
             break
         print(signature_decoded)
+
         b = base64.b64encode(signature)
+
+        encrypt_message(key, cm) # Encrypt the message 
         structure = {
             "WhoAmI": f"{whoami}",
             "Signature": f"{signature_decoded}",
@@ -129,7 +181,7 @@ while True:
         #print(result)
         #result = base64.decode(result)
         result = bytes(result, 'utf-8')
-        print(deCrypt(b"5\xd8c\x8d\xcd-\x9fR\xaa\x11\xe0\xcc\x19\x1a\xbe<\xeb\x84\xd8\x8a9\x03\x15\xcd\x08Ib\xfb_\xb5\xaa\xb0", result))
+        print(decrypt_message(key, result))
 
     elif inp == '2':
         uuid = input('UUID: ')

