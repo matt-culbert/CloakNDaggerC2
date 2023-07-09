@@ -25,7 +25,7 @@ def clearDB():
         conn.delete(key)
 
 def decrypt_message(key, ciphertext, nonce):
-    backend = default_backend()
+    backend1 = default_backend()
     salt = b'salt'  # Salt used for key derivation
 
     # Derive a 256-bit encryption key using PBKDF2
@@ -34,7 +34,7 @@ def decrypt_message(key, ciphertext, nonce):
         length=32,
         salt=salt,
         iterations=100000,
-        backend=backend
+        backend=backend1
     )
     key = kdf.derive(key)
 
@@ -42,7 +42,7 @@ def decrypt_message(key, ciphertext, nonce):
     cipher = Cipher(
         algorithms.XChaCha20(key, nonce),
         mode=None,
-        backend=backend
+        backend=backend1
     )
     decryptor = cipher.decryptor()
 
@@ -52,7 +52,7 @@ def decrypt_message(key, ciphertext, nonce):
     return plaintext
 
 def encrypt_message(key, plaintext):
-    backend = default_backend()
+    backend1 = default_backend()
     salt = b'salt'  # Salt used for key derivation
 
     # Derive a 256-bit encryption key using PBKDF2
@@ -61,18 +61,18 @@ def encrypt_message(key, plaintext):
         length=32,
         salt=salt,
         iterations=100000,
-        backend=backend
+        backend=backend1
     )
     key = kdf.derive(key)
 
     # Generate a random nonce
-    nonce = backend.random(bytes(algorithms.XChaCha20.NONCE_SIZE))
+    nonce = default_backend().random(bytes(algorithms.XChaCha20.NONCE_SIZE))
 
     # Create a XChaCha20-Poly1305 cipher object
     cipher = Cipher(
         algorithms.XChaCha20(key, nonce),
         mode=None,
-        backend=backend
+        backend=backend1
     )
     encryptor = cipher.encryptor()
 
