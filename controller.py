@@ -18,7 +18,7 @@ import os
 # Needs a function to wipe the db and make all active beacons check in again
 # Right now when the database is wiped, the beacons will not check in again
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
-key =  b'12345678901234567890123456789012'  # A 256 bit (32 byte) key
+key = b'12345678901234567890123456789012'  # A 256 bit (32 byte) key
 
 def clearDB():
     for key in conn.scan_iter("*"):
@@ -66,11 +66,11 @@ def encrypt_message(key, plaintext):
     key = kdf.derive(key)
 
     # Generate a random nonce
-    nonce = default_backend().random(bytes(algorithms.XChaCha20.NONCE_SIZE))
+    nonce = default_backend().random(bytes(ChaCha20Poly1305.XChaCha20.NONCE_SIZE))
 
     # Create a XChaCha20-Poly1305 cipher object
     cipher = Cipher(
-        algorithms.XChaCha20(key, nonce),
+        ChaCha20Poly1305.XChaCha20(key, nonce),
         mode=None,
         backend=backend1
     )
