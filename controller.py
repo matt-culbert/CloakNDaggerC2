@@ -126,6 +126,7 @@ while True:
         connector = json.loads(structure)  # Load it into a new var
         LastInteraction = connector["LastInteraction"]
         whoami = connector["WhoAmI"]
+        nonce =  connector["Nonce"]
         result = connector["Result"]
         byte_inp = bytes(cm, 'utf-8')
 
@@ -153,10 +154,19 @@ while True:
         print(signature_decoded)
 
         b = base64.b64encode(signature)
-
-        encrypt_message(key, cm) # Encrypt the message 
+        #chacha = ChaCha20Poly1305(key)
+        #nonce = os.urandom(12)
+        #print(nonce)
+        #byte_cm = bytes(cm, 'utf-8')
+        #cm = chacha.encrypt(nonce, byte_cm, nonce)
+        #cm, nonce = encrypt_message(key, cm) # Encrypt the message
+        # encode the nonce to string before saving it
+        #decoded_nonce = base64.b64encode(nonce).decode('utf-8')
+        #chacha.decrypt(nonce, cm, nonce)
+        #print(decoded_nonce)
         structure = {
             "WhoAmI": f"{whoami}",
+            "Nonce": f"{0}",
             "Signature": f"{signature_decoded}",
             "Retrieved": "1",  # Set retrieved to 1 so we know we got results
             "Command": f"{cm}",
@@ -185,7 +195,7 @@ while True:
         #print(result)
         #result = base64.decode(result)
         result = bytes(result, 'utf-8')
-        print(decrypt_message(key, result))
+        print(result)
 
     elif inp == '2':
         uuid = input('UUID: ')
@@ -195,7 +205,7 @@ while True:
     elif inp == "4":
         subprocess.Popen(["python3", "listener.py"])
     elif inp == "5":
-        # print(conn.keys()) # UUID is the key but we want values from the key
+        # print(conn.keys()) # UUID is the key, but we want values from the key
         print(conn.hgetall('UUID'))  # We're searching by hash values here
     else:
         print('\n '
