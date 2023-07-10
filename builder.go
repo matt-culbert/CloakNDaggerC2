@@ -36,8 +36,24 @@ func main() {
 		DB:       0,
 	})
 
+	// generate a key pair
+	pubKey, privKey, err := generateKeyPair(2048)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Public key: %s\n", encodePublicKey(&pubKey))
+	fmt.Printf("Private key: %s\n", encodePrivateKey(&privKey))
+
 	uuidWithHyphen := uuid.New()
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
+
+	// save the private key to a file
+	err = savePrivateKey(privKey, "private.pem")
+	if err != nil {	
+		log.Fatal(err)
+	}
+
 
 	ctx := context.Background()
 

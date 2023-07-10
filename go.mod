@@ -1,6 +1,6 @@
 module github.com/sirupsen/logrus
 
-go 1.20
+go 1.19
 
 require (
 	github.com/manifoldco/promptui v0.9.0
