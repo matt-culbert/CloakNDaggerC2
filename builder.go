@@ -3,9 +3,13 @@
 package main
 
 import (
-	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"embed"
+	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -14,11 +18,10 @@ import (
 	"uuid"
 
 	"github.com/manifoldco/promptui"
-	"github.com/redis/go-redis/v9"
 )
 
 var (
-	//go:embed templates/*.tmpl
+	//go:embed *.tmpl
 	rootFs embed.FS
 )
 
@@ -26,43 +29,13 @@ type appValues struct {
 	CallBack string
 	AppName  string
 	UUID     string
-	pubkey   string
+	pubkey   []byte
 }
 
 func main() {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
-		DB:       0,
-	})
-
-	// generate a key pair
-	pubKey, privKey, err := generateKeyPair(2048)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("Public key: %s\n", encodePublicKey(&pubKey))
-	fmt.Printf("Private key: %s\n", encodePrivateKey(&privKey))
 
 	uuidWithHyphen := uuid.New()
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
-
-	// save the private key to a file
-	err = savePrivateKey(privKey, "private.pem")
-	if err != nil {	
-		log.Fatal(err)
-	}
-
-
-	ctx := context.Background()
-
-	err := client.Set(ctx, uuid, pubKey, 0).Err()
-	if err != nil {
-		uuidWithHyphen := uuid.New()
-		uuid = strings.Replace(uuidWithHyphen.String(), "-", "", -1)
-		err := client.Set(ctx, uuid, pubKey, 0).Err()
-	}
 
 	argLength := len(os.Args[1:])
 	if argLength < 4 {
@@ -78,17 +51,57 @@ func main() {
 	values := appValues{}
 	fmt.Printf("Dagger builder \n")
 
+	filename := uuid
+	bitSize := 4096
+
+	// Generate RSA key.
+	key, err := rsa.GenerateKey(rand.Reader, bitSize)
+	if err != nil {
+		panic(err)
+	}
+
+	// Extract public component.
+	pub := key.Public()
+
+	// Encode private key to PKCS#1 ASN.1 PEM.
+	keyPEM := pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(key),
+		},
+	)
+
+	// Encode public key to PKCS#1 ASN.1 PEM.
+	pubPEM := pem.EncodeToMemory(
+		&pem.Block{
+			Type:  "RSA PUBLIC KEY",
+			Bytes: x509.MarshalPKCS1PublicKey(pub.(*rsa.PublicKey)),
+		},
+	)
+
+	// Write private key to file.
+	if err := ioutil.WriteFile("keys/"+filename+".pem", keyPEM, 0700); err != nil {
+		panic(err)
+	}
+
+	// Write public key to file.
+	if err := ioutil.WriteFile("keys/"+filename+".rsa.pem", pubPEM, 0755); err != nil {
+		panic(err)
+	}
+
 	values.CallBack = os.Args[4]
 	values.AppName = os.Args[3]
+	values.UUID = uuid
+	values.pubkey = pubPEM
 
-	rootFsMapping := map[string]string{
-		"dagger.go.tmpl": mydir + "/templates/" + values.AppName + ".go",
+	rootFsMapping := map[string]string{ // mydir + "/templates/" +
+		"dagger.go.tmpl": values.AppName + ".go",
 	}
 
 	/*
 	 * Process templates
 	 */
-	if templates, err = template.ParseFS(rootFs, "templates/*.tmpl"); err != nil {
+	if templates, err = template.ParseFS(rootFs, "*.tmpl"); err != nil {
 		log.Fatalln(err)
 	}
 
