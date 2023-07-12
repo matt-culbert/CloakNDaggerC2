@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	//go:embed *.tmpl
+	//go:embed templates/*.tmpl
 	rootFs embed.FS
 )
 
@@ -33,13 +33,15 @@ type appValues struct {
 }
 
 func main() {
-
 	uuidWithHyphen := uuid.New()
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
 
-	argLength := len(os.Args[1:])
-	if argLength < 4 {
-		fmt.Printf("Not enough arguments. Need platform, architecture, callback URL, and output file name \n")
+	filename := uuid
+	bitSize := 4096
+
+	if len(os.Args) < 5 {
+		fmt.Printf("Not enough arguments. Need platform, architecture, output file name, and callback URL \n")
+		os.Exit(1)
 	}
 	mydir, _ := os.Getwd()
 	var (
@@ -49,10 +51,7 @@ func main() {
 	)
 
 	values := appValues{}
-	fmt.Printf("Dagger builder \n")
-
-	filename := uuid
-	bitSize := 4096
+	fmt.Printf("=|---> Dagger generator <---|= \n")
 
 	// Generate RSA key.
 	key, err := rsa.GenerateKey(rand.Reader, bitSize)
@@ -85,7 +84,7 @@ func main() {
 	}
 
 	// Write public key to file.
-	if err := ioutil.WriteFile("keys/"+filename+".rsa.pem", pubPEM, 0755); err != nil {
+	if err := ioutil.WriteFile("keys/"+filename+".pub.pem", pubPEM, 0755); err != nil {
 		panic(err)
 	}
 
@@ -94,14 +93,14 @@ func main() {
 	values.UUID = uuid
 	values.pubkey = pubPEM
 
-	rootFsMapping := map[string]string{ // mydir + "/templates/" +
-		"dagger.go.tmpl": values.AppName + ".go",
+	rootFsMapping := map[string]string{
+		"dagger.go.tmpl": mydir + "/templates/" + values.AppName + ".go",
 	}
 
 	/*
 	 * Process templates
 	 */
-	if templates, err = template.ParseFS(rootFs, "*.tmpl"); err != nil {
+	if templates, err = template.ParseFS(rootFs, "templates/*.tmpl"); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -117,7 +116,7 @@ func main() {
 		}
 	}
 
-	fmt.Printf(" Done  building template \n")
+	fmt.Printf(" Done")
 
 	// We set the app name and full path here for use later
 	appNamePath := mydir + "/templates/" + values.AppName + ".go"
@@ -134,9 +133,6 @@ func main() {
 	}
 	res := string(out)
 	fmt.Printf(res)
-
-	fmt.Printf(" Done compiling \n ")
-
 }
 
 func stringPrompt(label, defaultValue string) string {
