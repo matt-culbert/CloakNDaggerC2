@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	//go:embed templates/*.tmpl
+	//go:embed staging_templates/*.tmpl
 	rootFs embed.FS
 )
 
@@ -29,7 +29,7 @@ type appValues struct {
 	CallBack string
 	AppName  string
 	UUID     string
-	pubkey   []byte
+	Pubkey   string
 }
 
 func main() {
@@ -78,6 +78,17 @@ func main() {
 		},
 	)
 
+	block, _ := pem.Decode([]byte(pubPEM))
+	if block == nil {
+		panic("failed to parse PEM block containing the public key")
+	}
+
+	string_pem := string(pubPEM)
+	string_pem_no_newLines := strings.Replace(string_pem, "\n", "", -1)
+	// Here we need to trim the start and end from the string
+	string_pem_no_newLines = string_pem_no_newLines[:len(string_pem_no_newLines)-28]
+	string_pem_no_newLines = string_pem_no_newLines[30:len(string_pem_no_newLines)]
+
 	// Write private key to file.
 	if err := ioutil.WriteFile("keys/"+filename+".pem", keyPEM, 0700); err != nil {
 		panic(err)
@@ -91,16 +102,16 @@ func main() {
 	values.CallBack = os.Args[4]
 	values.AppName = os.Args[3]
 	values.UUID = uuid
-	values.pubkey = pubPEM
+	values.Pubkey = string_pem_no_newLines
 
 	rootFsMapping := map[string]string{
-		"dagger.go.tmpl": mydir + "/templates/" + values.AppName + ".go",
+		"dagger.go.tmpl": mydir + "/staging_templates/" + values.AppName + ".go",
 	}
 
 	/*
 	 * Process templates
 	 */
-	if templates, err = template.ParseFS(rootFs, "templates/*.tmpl"); err != nil {
+	if templates, err = template.ParseFS(rootFs, "staging_templates/*.tmpl"); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -119,7 +130,7 @@ func main() {
 	fmt.Printf(" Done")
 
 	// We set the app name and full path here for use later
-	appNamePath := mydir + "/templates/" + values.AppName + ".go"
+	appNamePath := mydir + "/staging_templates/" + values.AppName + ".go"
 
 	// we set these as global compile options
 	os.Setenv("GOOS", os.Args[1])

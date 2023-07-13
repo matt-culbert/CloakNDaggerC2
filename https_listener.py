@@ -146,7 +146,7 @@ def schema():
 
 def serve():
     context = ('cert.pem', 'key.pem')
-    app.run(host="test.culbertreport", port=8000, ssl_context=context)
+    app.run(host="test.culbertreport", port=8000)#, ssl_context=context)
 
 
 if __name__ == "__main__":
