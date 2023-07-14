@@ -1,5 +1,7 @@
 # Cloak & Dagger
 
+A C2 framework designed around the use of public/private RSA key pairs to sign and authenticate commands being executed. This prevents MiTM interception of calls and ensures opsec during delicate operations.
+
 This is an evolution of the original Switchblade C2. Cloak refers to the C2 backend and Dagger is the implant.
 
 ### Setup
