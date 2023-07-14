@@ -96,8 +96,10 @@ func main() {
 	if PEMBlock.Type != "PUBLIC KEY" {
 		log.Fatal("Found wrong key type")
 	}
-	pubkey, _ := x509.ParsePKIXPublicKey(PEMBlock.Bytes)
-
+	pubkey, err2 := x509.ParsePKIXPublicKey(PEMBlock.Bytes)
+	if err2 != nil {
+		log.Fatal("Found wrong key type")
+	}
 	// to do
 	// set the pubkey to be generated through the builder app, same with uuid
 

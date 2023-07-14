@@ -3,11 +3,7 @@
 package main
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
 	"embed"
-	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -21,7 +17,7 @@ import (
 )
 
 var (
-	//go:embed staging_templates/*.tmpl
+	//go:embed templates/*.tmpl
 	rootFs embed.FS
 )
 
@@ -35,9 +31,6 @@ type appValues struct {
 func main() {
 	uuidWithHyphen := uuid.New()
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
-
-	filename := uuid
-	bitSize := 4096
 
 	if len(os.Args) < 5 {
 		fmt.Printf("Not enough arguments. Need platform, architecture, output file name, and callback URL \n")
@@ -53,51 +46,24 @@ func main() {
 	values := appValues{}
 	fmt.Printf("=|---> Dagger generator <---|= \n")
 
-	// Generate RSA key.
-	key, err := rsa.GenerateKey(rand.Reader, bitSize)
+	// execute python script to generate keys
+	genKey := exec.Command("python3", "crypter.py", uuid)
+	out, err := genKey.Output()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	// Extract public component.
-	pub := key.Public()
-
-	// Encode private key to PKCS#1 ASN.1 PEM.
-	keyPEM := pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "RSA PRIVATE KEY",
-			Bytes: x509.MarshalPKCS1PrivateKey(key),
-		},
-	)
-
-	// Encode public key to PKCS#1 ASN.1 PEM.
-	pubPEM := pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "RSA PUBLIC KEY",
-			Bytes: x509.MarshalPKCS1PublicKey(pub.(*rsa.PublicKey)),
-		},
-	)
-
-	block, _ := pem.Decode([]byte(pubPEM))
-	if block == nil {
-		panic("failed to parse PEM block containing the public key")
+	// read key
+	pubPEM, err := ioutil.ReadFile("keys/" + uuid + ".pub.pem")
+	if err != nil {
+		panic(err)
 	}
 
 	string_pem := string(pubPEM)
 	string_pem_no_newLines := strings.Replace(string_pem, "\n", "", -1)
 	// Here we need to trim the start and end from the string
-	string_pem_no_newLines = string_pem_no_newLines[:len(string_pem_no_newLines)-28]
-	string_pem_no_newLines = string_pem_no_newLines[30:len(string_pem_no_newLines)]
-
-	// Write private key to file.
-	if err := ioutil.WriteFile("keys/"+filename+".pem", keyPEM, 0700); err != nil {
-		panic(err)
-	}
-
-	// Write public key to file.
-	if err := ioutil.WriteFile("keys/"+filename+".pub.pem", pubPEM, 0755); err != nil {
-		panic(err)
-	}
+	string_pem_no_newLines = string_pem_no_newLines[:len(string_pem_no_newLines)-24]
+	string_pem_no_newLines = string_pem_no_newLines[26:len(string_pem_no_newLines)]
 
 	values.CallBack = os.Args[4]
 	values.AppName = os.Args[3]
@@ -105,13 +71,13 @@ func main() {
 	values.Pubkey = string_pem_no_newLines
 
 	rootFsMapping := map[string]string{
-		"dagger.go.tmpl": mydir + "/staging_templates/" + values.AppName + ".go",
+		"dagger.go.tmpl": mydir + "/templates/" + values.AppName + ".go",
 	}
 
 	/*
 	 * Process templates
 	 */
-	if templates, err = template.ParseFS(rootFs, "staging_templates/*.tmpl"); err != nil {
+	if templates, err = template.ParseFS(rootFs, "templates/*.tmpl"); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -130,7 +96,7 @@ func main() {
 	fmt.Printf(" Done")
 
 	// We set the app name and full path here for use later
-	appNamePath := mydir + "/staging_templates/" + values.AppName + ".go"
+	appNamePath := mydir + "/templates/" + values.AppName + ".go"
 
 	// we set these as global compile options
 	os.Setenv("GOOS", os.Args[1])
@@ -138,7 +104,7 @@ func main() {
 
 	// after setting environment variables, we compile using go build and the path to the file
 	setEnvVar := exec.Command("go", "build", appNamePath)
-	out, err := setEnvVar.Output()
+	out, err = setEnvVar.Output()
 	if err != nil {
 		log.Fatal(err)
 	}
