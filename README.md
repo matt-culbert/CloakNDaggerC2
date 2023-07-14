@@ -37,6 +37,7 @@ Core items:
 - [x] Generate UUID and public/private key pair and add these to the generated beacon
 - [x] When the builder is finished, update the controller to lookup keys by UUID instead of "test"
 - [ ] Change the listeners to accept arbitrary URLs for callback
+- [ ] Change the listeners to be imported classes that allows us to change URLs and ports easily
 - [ ] Change it so the listeners no longer need a check in procedure, have the builder maybe write to the redis DB with the UUID? Would solve some other issues too with checking in after the DB is wiped
 - [ ] Write a generator for the listeners, could be as simple as changing their listening addresses to sys.argv
 - [ ] Add a .NET appdomain function for running tools like SeatBelt
