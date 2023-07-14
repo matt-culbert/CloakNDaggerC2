@@ -22,13 +22,9 @@ On Kali, change the redis host in the controller and listener to 127.0.0.1 from 
 ### Todo: 
 
 Core items:
-- [ ] Generate shellcode from the controller by adding ```go build -buildmode=pie -o shellcode.bin .\beacon.go```
+- [ ] Generate shellcode from the builder by adding ```go build -buildmode=pie -o shellcode.bin .\beacon.go```
 - [x] Generate UUID and public/private key pair and add these to the generated beacon
-- [ ] When the builder is finished, update the controller to lookup keys by UUID instead of "test"
-
-Reach items:
-- [ ] Add RSA key gen to builder. This will be needed for the reverse proxy as well
-- [ ] XOR enc IP
-- [ ] Clean up the usability from the console
-- [ ] RSA encrypt results of command execution with public key
-- [ ] XOR enc incoming commands with a pre shared secret, possibly the public key??
+- [x] When the builder is finished, update the controller to lookup keys by UUID instead of "test"
+- [ ] Change it so the listeners no longer need a check in procedure, have the builder maybe write to the redis DB with the UUID? Would solve some other issues too with checking in after the DB is wiped
+- [ ] Write a generator for the listeners, could be as simple as changing their listening addresses to sys.argv
+- [ ] Add a .NET appdomain function for running tools like SeatBelt
