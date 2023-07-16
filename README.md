@@ -34,6 +34,7 @@ On Kali, change the redis host in the controller and listener to 127.0.0.1 from 
 Core items:
 - [ ] Generate shellcode from the builder by adding ```go build -buildmode=pie -o shellcode.bin .\beacon.go```
 - [ ] Make an install script
+- [ ] Add profile support for different URL paths. Then listeners can just pull from here each time they're started and implants will pull from here on generation
 - [x] Generate UUID and public/private key pair and add these to the generated beacon
 - [x] When the builder is finished, update the controller to lookup keys by UUID instead of "test"
 - [ ] Change the listeners to accept arbitrary URLs for callback
