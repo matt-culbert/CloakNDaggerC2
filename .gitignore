@@ -2,3 +2,6 @@ staging*
 *.pem
 .DS_Store
 .vs
+*.pub
+*.rsa
+*.der

