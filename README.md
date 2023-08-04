@@ -34,12 +34,10 @@ On Kali, change the redis host in the controller and listener to 127.0.0.1 from 
 ### Todo: 
 
 Core items:
-- [x] Generate shellcode from the builder by adding ```go build -buildmode=pie -o shellcode.bin .\beacon.go```
 - [ ] Add a historical context for report exporting from Redis for all commands run on a target. Probably with MongoDB so that we can also encrypt it?
 - [ ] Make an install script
+- [ ] Registration should occur when the implant is compiled, the listener can then check the redis DB for the corresponding private key. Can also do this on the edge with an nginx reverse proxy
 - [ ] Add profile support for different URL paths. Then listeners can just pull from here each time they're started and implants will pull from here on generation
-- [x] Generate UUID and public/private key pair and add these to the generated beacon
-- [x] When the builder is finished, update the controller to lookup keys by UUID instead of "test"
 - [ ] Change the listeners to accept arbitrary URLs for callback
 - [ ] Change the listeners to be imported classes for the controller that allows us to change URLs and ports easily
 - [ ] Change it so the listeners no longer need a check in procedure, have the builder maybe write to the redis DB with the UUID? Would solve some other issues too with checking in after the DB is wiped
