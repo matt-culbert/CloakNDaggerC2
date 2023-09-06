@@ -1,5 +1,7 @@
 # Cloak & Dagger
 
+![logo](/img/guide/cnd8.png)
+
 A C2 framework designed around the use of public/private RSA key pairs to sign and authenticate commands being executed. This prevents MiTM interception of calls and ensures opsec during delicate operations.
 
 This is an evolution of the original Switchblade C2. Cloak refers to the C2 backend and Dagger is the implant.
@@ -32,14 +34,12 @@ On Kali, change the redis host in the controller and listener to 127.0.0.1 from 
 ### Todo: 
 
 Core items:
-- [ ] Generate shellcode from the builder by adding ```go build -buildmode=pie -o shellcode.bin .\beacon.go```
 - [ ] Add a historical context for report exporting from Redis for all commands run on a target. Probably with MongoDB so that we can also encrypt it?
 - [ ] Make an install script
+- [ ] Registration should occur when the implant is compiled, the listener can then check the redis DB for the corresponding private key. Can also do this on the edge with an nginx reverse proxy
 - [ ] Add profile support for different URL paths. Then listeners can just pull from here each time they're started and implants will pull from here on generation
-- [x] Generate UUID and public/private key pair and add these to the generated beacon
-- [x] When the builder is finished, update the controller to lookup keys by UUID instead of "test"
 - [ ] Change the listeners to accept arbitrary URLs for callback
 - [ ] Change the listeners to be imported classes for the controller that allows us to change URLs and ports easily
 - [ ] Change it so the listeners no longer need a check in procedure, have the builder maybe write to the redis DB with the UUID? Would solve some other issues too with checking in after the DB is wiped
 - [ ] Write a generator for the listeners, could be as simple as changing their listening addresses to sys.argv
-- [ ] Add a .NET appdomain function for running tools like SeatBelt
+- [ ] Add a .NET appdomain function for running tools like SeatBelt. We can load these recieved binaries into a byte array. But this approach only allows one loaded at a time
