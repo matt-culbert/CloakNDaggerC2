@@ -42,4 +42,6 @@ Core items:
 - [ ] Change the listeners to be imported classes for the controller that allows us to change URLs and ports easily
 - [ ] Change it so the listeners no longer need a check in procedure, have the builder maybe write to the redis DB with the UUID? Would solve some other issues too with checking in after the DB is wiped
 - [ ] Write a generator for the listeners, could be as simple as changing their listening addresses to sys.argv
-- [ ] Add a .NET appdomain function for running tools like SeatBelt. We can load these recieved binaries into a byte array. But this approach only allows one loaded at a time
+- [x] Add a .NET appdomain function for running tools like SeatBelt. We can load these recieved binaries into a byte array. But this approach only allows one loaded at a time
+- [ ] Add persistence for the binaries sent over, so they only need to be sent once. Maybe encrypt with a key then decrypt to run, then encrypt with the current time stamp as a new key? who knows
+- [ ] I really need to break out the API calls into a seperate file. It's large and clunky and looking at it makes me sad :(
