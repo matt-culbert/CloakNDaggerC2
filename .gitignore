@@ -5,3 +5,6 @@ staging*
 *.pub
 *.rsa
 *.der
+*.xml
+*.bin
+Builder/templates/*go
