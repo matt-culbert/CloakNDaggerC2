@@ -120,6 +120,10 @@ while True:
             cm = splits[1:]
         elif splits[0] == "dotnet":
             path = splits[1:]
+            with open(path, "rb") as in_file:
+                cm = "dotnet-exe "
+                in_file = base64.b64encode(bytes(in_file, 'utf-8'))
+                cm += in_file
         else: cm = choice
         # I want to preserve the current last check in time
         # so dump the DB and grab that field

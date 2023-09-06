@@ -145,7 +145,7 @@ async def schema():
 
 
 def serve():
-    app.run(host="test.culbertreport", port=8000, certfile='cert.pem', keyfile='key.pem')  # ssl_context='adhoc')
+    app.run(host="http://192.168.1.179", port=8000)#, certfile='cert.pem', keyfile='key.pem')  # ssl_context='adhoc')
 
 
 if __name__ == "__main__":

