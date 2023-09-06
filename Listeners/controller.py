@@ -109,13 +109,17 @@ while True:
               'gcu      - get the current user \n'
               'rc       - run a single command \n'
               'rd       - read a directory \n'
-              'terminal - Enter only terminal here and the command in the following prompt \n')
+              'terminal - Enter a terminal command \n'
+              'dotnet   - Expects the path to the dotnet exe; Example dotnet /home/kali/seatbelt.exe \n')
         uuid = input('UUID: ')
         #while inp != "exit":  # If the input is exit, break the loop
         choice = input('Command: ')
         choice = choice.lower()
-        if choice == "terminal":
-            cm = input('Enter terminal command: ')
+        splits = choice.split()
+        if splits[0] == "terminal":
+            cm = splits[1:]
+        elif splits[0] == "dotnet":
+            path = splits[1:]
         else: cm = choice
         # I want to preserve the current last check in time
         # so dump the DB and grab that field
