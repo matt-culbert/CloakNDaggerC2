@@ -32,7 +32,7 @@ func main() {
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
 
 	if os.Args[1] == "help" {
-		fmt.Printf("Need platform, architecture, output file name, and callback URL >>> builder windows amd64 tempExe http://192.168.1.179:8000\n")
+		fmt.Printf("Need platform, architecture, output file name, and callback URL >>> ./builder windows amd64 tempExe http://192.168.1.179:8000\n")
 		fmt.Printf("For a PIE, need platform, pie keyword, output file name, and callback URL >>> ./builder windows pie tempExe http://192.168.1.179:8000 \n")
 		os.Exit(1)
 	}
@@ -53,13 +53,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	fmt.Printf("Keys generated \n")
 	// read key
 	pubPEM, err := ioutil.ReadFile("keys/" + uuid + ".pub.pem")
 	if err != nil {
 		panic(err)
 	}
-
+	fmt.Printf("Keys read \n")
 	string_pem := string(pubPEM)
 	string_pem_no_newLines := strings.Replace(string_pem, "\n", "", -1)
 	// Here we need to trim the start and end from the string
@@ -74,7 +74,7 @@ func main() {
 	rootFsMapping := map[string]string{
 		"dagger.go.tmpl": mydir + "/templates/" + values.AppName + ".go",
 	}
-
+	fmt.Printf("Template mapped \n")
 	/*
 	 * Process templates
 	 */
@@ -93,7 +93,7 @@ func main() {
 			log.Fatalln(err)
 		}
 	}
-
+	fmt.Printf("Template executed \n")
 	switch os.Args[2] {
 	case "pie":
 		fmt.Printf(" Generating PIE \n")
@@ -115,6 +115,7 @@ func main() {
 		// we set these as global compile options
 		os.Setenv("GOOS", os.Args[1])
 		os.Setenv("GOARCH", os.Args[2])
+		fmt.Printf("Set env variables \n")
 
 		// after setting environment variables, we compile using go build and the path to the file
 		setEnvVarExec := exec.Command("go", "build", appNamePath)
