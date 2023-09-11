@@ -36,12 +36,12 @@ On Kali, change the redis host in the controller and listener to 127.0.0.1 from 
 Core items:
 - [ ] Add a historical context for report exporting from Redis for all commands run on a target. Probably with MongoDB so that we can also encrypt it?
 - [ ] Make an install script
-- [ ] Registration should occur when the implant is compiled, the listener can then check the redis DB for the corresponding private key. Can also do this on the edge with an nginx reverse proxy
+- [x] Registration should occur when the implant is compiled, the listener can then check the redis DB for the corresponding private key. Can also do this on the edge with an nginx reverse proxy
 - [ ] Add profile support for different URL paths. Then listeners can just pull from here each time they're started and implants will pull from here on generation
 - [ ] Change the listeners to accept arbitrary URLs for callback
 - [ ] Change the listeners to be imported classes for the controller that allows us to change URLs and ports easily
-- [ ] Change it so the listeners no longer need a check in procedure, have the builder maybe write to the redis DB with the UUID? Would solve some other issues too with checking in after the DB is wiped
 - [ ] Write a generator for the listeners, could be as simple as changing their listening addresses to sys.argv
 - [x] Add a .NET appdomain function for running tools like SeatBelt. We can load these recieved binaries into a byte array. But this approach only allows one loaded at a time
 - [ ] Add persistence for the binaries sent over, so they only need to be sent once. Maybe encrypt with a key then decrypt to run, then encrypt with the current time stamp as a new key? who knows
 - [ ] I really need to break out the API calls into a seperate file. It's large and clunky and looking at it makes me sad :(
+- [ ] The server should implement checks to confirm a shared secret before processing requests for commands implants. Prevent "stealing" of commands by an attacker supplying a stolen UUID
