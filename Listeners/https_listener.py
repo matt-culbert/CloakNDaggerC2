@@ -21,6 +21,7 @@ app = Flask(__name__)
 
 
 @app.route('/', methods=['GET'])
+# We no longer need this function, registration happens in the generator
 def home():
     print('start')
     # This handles initial registration

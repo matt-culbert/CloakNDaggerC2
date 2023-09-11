@@ -1,9 +1,9 @@
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
+import redis
+import datetime
 import sys
-import binascii
+import json
 size=512
 
 try:
@@ -28,6 +28,26 @@ try:
   with open("keys/"+sys.argv[1]+".pub.pem", "wb") as public_file:
     public_file.write(pem_public_key)
 
+  conn = redis.StrictRedis(host='localhost', port=6379, db=0)
+
+  structure = {
+      "WhoAmI": f"{sys.argv[1]}",
+      "Nonce": f"0",
+      "Signature": "0",
+      "Retrieved": "0",
+      "Command": "0",
+      "LastInteraction": "0",
+      "LastCheckIn": "",
+      "Result": "0",
+      "GotIt": "0"
+  }
+  structure = json.dumps(structure)  # Dump the json
+  # Write the message value to the beacon:UUID key
+  conn.hset('UUID', sys.argv[1], structure)
+
+  print("setup UUID")
+
 except Exception as e:
   print(e)
+
 
