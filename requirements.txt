@@ -1,0 +1,5 @@
+crypto~=1.4.1
+redis~=4.5.5
+cryptography~=40.0.2
+Flask~=2.3.2
+quart~=0.18.4
