@@ -46,3 +46,4 @@ Core items:
 - [ ] Build in lateral movement functionality. So LSASS dumping and SMB
 - [ ] General process memory dumping ability
 - [ ] List PID and PPID
+- [ ] Token theft
