@@ -44,3 +44,5 @@ Core items:
 - [ ] Add persistence for the binaries sent over, so they only need to be sent once. Maybe encrypt with a key then decrypt to run, then encrypt with the current time stamp as a new key? who knows
 - [ ] I really need to break out the API calls into a seperate file. It's large and clunky and looking at it makes me sad :(
 - [ ] Build in lateral movement functionality. So LSASS dumping and SMB
+- [ ] General process memory dumping ability
+- [ ] List PID and PPID
