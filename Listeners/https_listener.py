@@ -7,6 +7,7 @@
 # the flask webserver sees the UUID then performs a fetch from the db
 # e z p z
 import base64
+import sys
 from datetime import datetime
 from flask import *
 import json
@@ -147,7 +148,7 @@ def schema():
 
 def serve():
     context = ('cert.pem', 'key.pem')
-    app.run(host="test.culbertreport", port=8000)#, ssl_context=context)
+    app.run(host=f"{sys.argv[1]}", port=sys.argv[2])#, ssl_context=context)
 
 
 if __name__ == "__main__":
