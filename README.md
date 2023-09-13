@@ -42,4 +42,4 @@ Core items:
 - [ ] Add a .NET appdomain function for running tools like SeatBelt. We can load these recieved binaries into a byte array. But this approach only allows one loaded at a time
 - [ ] Add persistence for the binaries sent over, so they only need to be sent once. Maybe encrypt with a key then decrypt to run, then encrypt with the current time stamp as a new key? who knows
 - [ ] I really need to break out the API calls into a seperate file. It's large and clunky and looking at it makes me sad :(
-- [ ] The server should implement checks to confirm a shared secret before processing requests for commands implants. Prevent "stealing" of commands by an attacker supplying a stolen UUID
+- [ ] Build in lateral movement functionality. So LSASS dumping and SMB
