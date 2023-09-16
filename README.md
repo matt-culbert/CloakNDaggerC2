@@ -35,15 +35,22 @@ On Kali, change the redis host in the controller and listener to 127.0.0.1 from 
 ### Todo: 
 
 Core items:
+
+These are the items that need to be done to make the framework actually usable
+- [ ] Clean up the CLI output
 - [ ] Add a historical context for report exporting from Redis for all commands run on a target. Probably with MongoDB so that we can also encrypt it?
 - [x] Make an install script
 - [x] Registration should occur when the implant is compiled, the listener can then check the redis DB for the corresponding private key. Can also do this on the edge with an nginx reverse proxy
 - [ ] Add profile support for different URL paths. Then listeners can just pull from here each time they're started and implants will pull from here on generation
 - [x] Change the listeners to accept arbitrary URLs for callback
-- [ ] Add a .NET appdomain function for running tools like SeatBelt. We can load these recieved binaries into a byte array. But this approach only allows one loaded at a time
-- [ ] Add persistence for the binaries sent over, so they only need to be sent once. Maybe encrypt with a key then decrypt to run, then encrypt with the current time stamp as a new key? who knows
 - [ ] I really need to break out the API calls into a seperate file. It's large and clunky and looking at it makes me sad :(
-- [ ] Build in lateral movement functionality. So LSASS dumping and SMB
-- [ ] General process memory dumping ability
 - [ ] List PID and PPID
 - [ ] Token theft
+
+Future tasks:
+
+These are tasks to be completed that will make the framework appealing to the target audience
+- [ ] Add a .NET appdomain function for running tools like SeatBelt. We can load these recieved binaries into a byte array. But this approach only allows one loaded at a time
+- [ ] Add persistence for the binaries sent over, so they only need to be sent once. Maybe encrypt with a key then decrypt to run, then encrypt with the current time stamp as a new key? who knows
+- [ ] Build in lateral movement functionality. So LSASS dumping and SMB
+- [ ] General process memory dumping ability
