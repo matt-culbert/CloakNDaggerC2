@@ -54,3 +54,4 @@ These are tasks to be completed that will make the framework appealing to the ta
 - [ ] Add persistence for the binaries sent over, so they only need to be sent once. Maybe encrypt with a key then decrypt to run, then encrypt with the current time stamp as a new key? who knows
 - [ ] Build in lateral movement functionality. So LSASS dumping and SMB
 - [ ] General process memory dumping ability
+- [ ] Construct a persistent directory tree generated from interacting with implants over time
