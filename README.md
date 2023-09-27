@@ -39,6 +39,7 @@ Core items:
 These are the items that need to be done to make the framework actually usable
 - [ ] Add absolute paths when calling applets from other folders....
 - [ ] Clean up the CLI output
+- [ ] Obfuscation of function names at generation time. This way each sample has unique hashes
 - [ ] Periscope had a great idea - canary URLs. If a canary URL is queried then the redirector just returns 404 to the investigator. These will only be seen people decompiling looking for strings so lets just add their info to a block list that lasts as long as the campaign.
 - [ ] Add a historical context for report exporting from Redis for all commands run on a target. Probably with MongoDB so that we can also encrypt it?
 - [x] Make an install script
