@@ -41,11 +41,10 @@ These are the items that need to be done to make the framework actually usable
 - [ ] Clean up the CLI output
 - [ ] Obfuscation of function names at generation time. This way each sample has unique hashes
 - [ ] Periscope had a great idea - canary URLs. If a canary URL is queried then the redirector just returns 404 to the investigator. These will only be seen people decompiling looking for strings so lets just add their info to a block list that lasts as long as the campaign.
-- [ ] Add a historical context for report exporting from Redis for all commands run on a target. Probably with MongoDB so that we can also encrypt it?
-- [x] Make an install script
-- [x] Registration should occur when the implant is compiled, the listener can then check the redis DB for the corresponding private key. Can also do this on the edge with an nginx reverse proxy
+- [ ] Add a historical context for report exporting from Redis for all commands run on a target.
+- [ ] Take unique system ID in dropper and change the builder to generate an EXE linked solely to this ID.
 - [ ] Add profile support for different URL paths. Then listeners can just pull from here each time they're started and implants will pull from here on generation
-- [x] Change the listeners to accept arbitrary URLs for callback
+- [ ] Add multiple call back methods
 - [ ] I really need to break out the API calls into a seperate file. It's large and clunky and looking at it makes me sad :(
 - [ ] List PID and PPID
 - [ ] Token theft
