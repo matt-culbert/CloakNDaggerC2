@@ -83,17 +83,6 @@ def session():
             nonce = connector["Nonce"]
             signature = connector["Signature"]
             print(signature)
-<<<<<<< HEAD
-            #whoami, nonce, signature, retrieved, command, last interaction, last check in, result, got it
-            dataSet = dbParameters(whoami, nonce, signature, 1, 0, LastInteraction,
-                                   datetime.today().strftime('%Y-%m-%d %H:%M:%S'), result, 0)
-            if set(uuid).difference(string.ascii_letters + string.digits):
-                # We're not going to bother with input sanitization here
-                # If we receive special characters just drop it entirely
-                pass
-            else:
-                updateDB(dataSet, uuid)
-=======
             # Set the command to 0
             structure = {
                 "WhoAmI": f"{whoami}",
@@ -110,7 +99,6 @@ def session():
             # Write the message value to the beacon:UUID key
             conn.hset('UUID', uuid, structure)
             #signature = str(signature)
->>>>>>> parent of 1bc4e01 (Update https_listener.py)
             resp = Response(
                 response=command, status=302, mimetype="text/plain")
             resp.headers['Verifier'] = signature
@@ -162,8 +150,8 @@ def schema():
 
 
 def serve():
-    context = ('../ca.key', '../server.key')
-    app.run(host=sys.argv[1], port=sys.argv[2], ssl_context=context)
+    context = ('cert.pem', 'key.pem')
+    app.run(host=f"{sys.argv[1]}", port=sys.argv[2])#, ssl_context=context)
 
 
 if __name__ == "__main__":
