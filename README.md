@@ -1,5 +1,7 @@
 # Cloak & Dagger
 
+Just laying it out, I'm bad about pushing to main and sometimes break it. I do notice it fast, but yeah... I'm trying to be better.
+
 ![logo](/img/guide/cnd8.png)
 
 A C2 framework designed around the use of public/private RSA key pairs to sign and authenticate commands being executed. This prevents MiTM interception of calls and ensures opsec during delicate operations.
