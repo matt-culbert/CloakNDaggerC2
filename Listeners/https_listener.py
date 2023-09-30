@@ -5,7 +5,7 @@ import json
 import redis
 import string
 from dataclasses import dataclass
-import API.redis_calls
+#import API.redis_calls
 
 @dataclass
 class dbParameters:
@@ -30,7 +30,7 @@ def updateDB(data_struct, uuid):
         "Nonce": data_struct.Nonce,
         "Signature": data_struct.Signature,
         "Retrieved": data_struct.Retrieved,
-        "Command": data_struct.ommand,
+        "Command": data_struct.Command,
         "LastInteraction": data_struct.LastInteraction,
         "LastCheckIn": datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
         "Result": data_struct.Result,
@@ -90,9 +90,8 @@ def session():
                 # We're not going to bother with input sanitization here
                 # If we receive special characters just drop it entirely
                 pass
-            else:
-                updateDB(dataSet, uuid)
-                return ''
+            else: updateDB(dataSet, uuid)
+
             resp = Response(
                 response=command, status=302, mimetype="text/plain")
             resp.headers['Verifier'] = signature
@@ -132,7 +131,7 @@ def schema():
 
 def serve():
     context = ('../ca.key', '../server.key')
-    app.run(host=sys.argv[1], port=sys.argv[2], ssl_context=context)
+    app.run(host=sys.argv[1], port=sys.argv[2])#, ssl_context=context)
 
 
 if __name__ == "__main__":
