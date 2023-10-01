@@ -10,14 +10,14 @@ from dataclasses import dataclass
 @dataclass
 class dbParameters:
     WhoAmI: str
-    Nonce: float
+    Nonce: str
     Signature: str
-    Retrieved: int  # Reset retrieved so we know the command was picked up
+    Retrieved: str  # Reset retrieved so we know the command was picked up
     Command: str
     LastInteraction: str
     LastCheckIn: str
     Result: str
-    GotIt: int
+    GotIt: str
 
 
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -84,13 +84,14 @@ def session():
             signature = connector["Signature"]
             print(signature)
             #whoami, nonce, signature, retrieved, command, last interaction, last check in, result, got it
-            dataSet = dbParameters(whoami, nonce, signature, 1, 0, LastInteraction,
-                                   datetime.today().strftime('%Y-%m-%d %H:%M:%S'), result, 0)
+            dataSet = dbParameters(whoami, nonce, signature, "1", "0", LastInteraction,
+                                   datetime.today().strftime('%Y-%m-%d %H:%M:%S'), result, "0")
             if set(uuid).difference(string.ascii_letters + string.digits):
                 # We're not going to bother with input sanitization here
                 # If we receive special characters just drop it entirely
                 pass
-            else: updateDB(dataSet, uuid)
+            else:
+                updateDB(dataSet, uuid)
 
             resp = Response(
                 response=command, status=302, mimetype="text/plain")
@@ -118,8 +119,8 @@ def schema():
     LastInteraction = connector["LastInteraction"]
     whoami = connector["WhoAmI"]
     # whoami, nonce, signature, retrieved, command, last interaction, last check in, result, got it
-    dataSet = dbParameters(whoami, 0, 0, 1, 0, LastInteraction,
-                           datetime.today().strftime('%Y-%m-%d %H:%M:%S'), result, 1)
+    dataSet = dbParameters(whoami, "0", "0", "1", "0", LastInteraction,
+                           datetime.today().strftime('%Y-%m-%d %H:%M:%S'), result, "1")
     if set(uuid).difference(string.ascii_letters + string.digits):
         # We're not going to bother with input sanitization here
         # If we receive special characters just drop it entirely
