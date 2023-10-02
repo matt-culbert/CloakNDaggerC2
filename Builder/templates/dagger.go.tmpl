@@ -221,6 +221,12 @@ func main() {
 		case "newProc":
 			path := sb1[1:]
 			new_process_new_token(0, path)
+		case "pid":
+		    	cPID := os.Getpid
+		    	pPID := os.Getppid
+		    	sCPID := strconv.Itoa(cPID)
+		    	cPPID := strconv.Itoa(pPID)
+		    	result = sCPID + ', ' + cPPID
 		}
 		toSend := string(result)
 		fmt.Printf(toSend)
