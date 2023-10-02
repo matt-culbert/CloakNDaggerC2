@@ -24,7 +24,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def builder(platform, arch, name, listener):
-    if subprocess.Popen(f"./builder {platform} {arch} {name} {listener}", shell=True, stdout=subprocess.PIPE,
+    if subprocess.Popen(f"go run builder.go {platform} {arch} {name} {listener}", shell=True, stdout=subprocess.PIPE,
                      cwd=r'../Builder'):
         print("Finished")
 
