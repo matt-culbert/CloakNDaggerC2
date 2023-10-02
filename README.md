@@ -48,7 +48,7 @@ These are the items that need to be done to make the framework actually usable
 - [ ] Add profile support for different URL paths. Then listeners can just pull from here each time they're started and implants will pull from here on generation
 - [ ] Add multiple call back methods
 - [x] I really need to break out the API calls into a seperate file. It's large and clunky and looking at it makes me sad :(
-- [ ] List PID and PPID
+- [x] List PID
 - [ ] Break functions in the implant out to a sub folder. That way, to add a new function, just add a file and then add a switch case that calls it.
 - [ ] Token theft
 
