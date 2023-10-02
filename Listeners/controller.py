@@ -123,7 +123,7 @@ while True:
               'rc       - run a single command \n'
               'rd       - read a directory \n'
               'terminal - Enter a terminal command \n'
-              'pid      - returns current PID and parent PID \n'
+              'pid      - returns current PID \n'
               'new_token_process  - Starts a new process with the token of your choice. Expects a PID to steal from and path \n'
               )
         uuid = input('UUID: ')
