@@ -30,6 +30,8 @@ Current commands:
 - ```rc``` runs a command through the terminal, this can be anything (Still working on making commands work that are more than one word. So '''whoami''' works fine but '''cat /etc/passwd''' has issues
 - ```rd``` reads the supplied directory. Use it with '''rd <directory path>'''
 - ```terminal``` allows you to run terminal commands - NOT OPSEC SAFE
+- ```groups``` returns the SID of all local groups the user is in
+- ```pid``` returns the current process ID
 
 ### Known issues:
 On Kali, change the redis host in the controller and listener to 127.0.0.1 from localhost.
