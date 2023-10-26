@@ -1,16 +1,14 @@
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 import redis
-import datetime
 import sys
 import json
 size=512
 
 try:
-  private_key = rsa.generate_private_key(
-    public_exponent=65537,
-    key_size=2048,
-  )
+  with open('../global.pem', 'rb') as pk:
+    private_key = serialization.load_pem_private_key(pk.read(), password=None)
+
   pem_public_key = private_key.public_key().public_bytes(
     encoding=serialization.Encoding.PEM,
     format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -20,10 +18,6 @@ try:
     format=serialization.PrivateFormat.TraditionalOpenSSL,
     encryption_algorithm=serialization.NoEncryption()
   )
-  with open("keys/"+sys.argv[1]+".pem", "wb") as key_file:
-    key_file.write(pem)
-  with open("keys/"+sys.argv[1]+".pem", "rb") as key_file:
-    private_key = serialization.load_pem_private_key(key_file.read(), password=None)
 
   with open("keys/"+sys.argv[1]+".pub.pem", "wb") as public_file:
     public_file.write(pem_public_key)

