@@ -22,7 +22,6 @@ import (
 	"bytes"
 
 	"golang.org/x/crypto/chacha20poly1305"
-<<<<<<< Updated upstream
 	"golang.org/x/sys/windows"
 )
 
@@ -42,11 +41,6 @@ func getGroups() (SID){
 	g := fmt.Sprint(groups)
 	return g
 }
-=======
-	//"golang.org/x/sys/windows"
-)
->>>>>>> Stashed changes
-
 
 func chacha(pass string, msg string) (enc_block []byte) {
 
@@ -268,13 +262,10 @@ func main() {
 		case "pid":
 		    pid := os.Getpid()
 		    result = fmt.Sprint(pid)
-<<<<<<< Updated upstream
-		case "groups":
-		    result := getGroups()
-=======
+
 		//case "groups":
 		//    result := getGroups()
->>>>>>> Stashed changes
+
 		}
 
 		toSend := string(result)
