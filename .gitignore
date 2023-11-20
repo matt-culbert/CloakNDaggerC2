@@ -8,3 +8,11 @@ staging*
 *.xml
 *.bin
 Builder/templates/*go
+Builder/builder
+*.exe
+*.csr
+*.org
+Builder/templates/testKeyRSA
+*.crt
+*.key
+Builder/templates/first
