@@ -166,7 +166,7 @@ while True:
         )
         signature_decoded = binascii.b2a_hex(signature).decode()
 
-        with open('../Builder/keys/' + uuid + ".pub.pem", "rb") as key_file:  # Read in the pem file for the UUID
+        with open("../global.pub.pem", "rb") as key_file:  # Read in the pem file for the UUID
             public_key = serialization.load_pem_public_key(key_file.read())
         try:
             public_key.verify(

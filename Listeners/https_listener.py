@@ -131,8 +131,8 @@ def schema():
 
 
 def serve():
-    context = ('../ca.key', '../server.key')
-    app.run(host=sys.argv[1], port=sys.argv[2])#, ssl_context=context)
+    context = ('testServer.crt', 'testServer.key')
+    app.run(host=sys.argv[1], port=sys.argv[2], ssl_context=context)
 
 
 if __name__ == "__main__":

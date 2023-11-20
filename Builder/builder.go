@@ -13,6 +13,9 @@ import (
 	"strings"
 	"text/template"
 	"uuid"
+	"crypto/x509"
+	"encoding/pem"
+	"crypto/sha256"
 )
 
 var (
@@ -25,6 +28,28 @@ type appValues struct {
 	AppName  string
 	UUID     string
 	Pubkey   string
+	ServerKey string
+	Fingerprint string
+}
+
+func calculatePublicKeyHash(publicKeyPEM []byte) (string, error) {
+    // Decode the PEM-encoded public key
+    block, _ := pem.Decode(publicKeyPEM)
+    if block == nil {
+        return "", fmt.Errorf("failed to decode PEM block containing public key")
+    }
+
+    // Parse the public key
+    cert, err := x509.ParseCertificate(block.Bytes)
+    if err != nil {
+        return "", fmt.Errorf("failed to parse certificate: %v", err)
+    }
+
+    // Calculate the SHA-256 hash of the raw public key bytes
+    hash := sha256.Sum256(cert.RawSubjectPublicKeyInfo)
+
+    // Return the hex-encoded hash as a string
+    return fmt.Sprintf("%x", hash), nil
 }
 
 func main() {
@@ -54,22 +79,50 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("Keys generated \n")
-	// read key
-	pubPEM, err := ioutil.ReadFile("keys/" + uuid + ".pub.pem")
+	// read the global key
+	pubPEM, err := ioutil.ReadFile("../global.pub.pem")
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("Keys read \n")
+	//hash, _ := calculatePublicKeyHash(pubPEM)
 	string_pem := string(pubPEM)
 	string_pem_no_newLines := strings.Replace(string_pem, "\n", "", -1)
 	// Here we need to trim the start and end from the string
 	string_pem_no_newLines = string_pem_no_newLines[:len(string_pem_no_newLines)-24]
 	string_pem_no_newLines = string_pem_no_newLines[26:len(string_pem_no_newLines)]
 
+	certPEM, err := ioutil.ReadFile("../Listeners/testServer.crt")
+
+	// I'm banging my head against a wall trying to trim the fingerprint in golang
+	// let's do it in bash
+	out, err = exec.Command("openssl", "x509", "-in", "../Listeners/testServer.crt", "-fingerprint", "-sha256").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// we've now got the output, so let's trim to the first line in Go
+	outstr := string(out)
+	lines := strings.Split(outstr, "\n")
+	firstLine := lines[0]
+	parts := strings.SplitAfterN(firstLine, "=", 2)
+	res := parts[1]
+	res = strings.ReplaceAll(res, ":", "")
+	fmt.Printf(res)
+	fmt.Printf("\n")
+	values.Fingerprint = res
+
+	string_cert := string(certPEM)
+	//hash, _ := calculatePublicKeyHash(certPEM)
+	string_cert_no_newLines := strings.Replace(string_cert, "\n", "", -1)
+	 //Here we need to trim the start and end from the string
+	string_cert_no_newLines = string_cert_no_newLines[:len(string_cert_no_newLines)-25]
+	string_cert_no_newLines = string_cert_no_newLines[27:len(string_cert_no_newLines)]
+
 	values.CallBack = os.Args[4]
 	values.AppName = os.Args[3]
 	values.UUID = uuid
 	values.Pubkey = string_pem_no_newLines
+	values.ServerKey = string_cert_no_newLines
 
 	rootFsMapping := map[string]string{
 		"dagger.go.tmpl": mydir + "/templates/" + values.AppName + ".go",
