@@ -38,6 +38,13 @@ On Kali, change the redis host in the controller and listener to 127.0.0.1 from 
 
 ### Todo: 
 
+Near term goals for long term viability
+- [ ] Tidy up code body for long term survivability
+  - [ ] This should include profile support upon first launch of the controller which:
+          - Allows defining the listener address
+          - Round robin listening addresses
+          - Functions in implant should be broken out to sub folders and utilize the package tag for compilation - I think this is the next goal
+
 Core items:
 
 These are the items that need to be done to make the framework actually usable
@@ -49,7 +56,6 @@ These are the items that need to be done to make the framework actually usable
 - [ ] Take unique system ID in dropper and change the builder to generate an EXE linked solely to this ID.
 - [ ] Add profile support for different URL paths. Then listeners can just pull from here each time they're started and implants will pull from here on generation
 - [ ] Add multiple call back methods
-- [ ] Break functions in the implant out to a sub folder. That way, to add a new function, just add a file and then add a switch case that calls it.
 - [ ] Token theft
 
 Future tasks:
