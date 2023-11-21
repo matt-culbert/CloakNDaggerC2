@@ -107,6 +107,7 @@ func main() {
 	parts := strings.SplitAfterN(firstLine, "=", 2)
 	res := parts[1]
 	res = strings.ReplaceAll(res, ":", "")
+	res = strings.ToLower(res)
 	fmt.Printf(res)
 	fmt.Printf("\n")
 	values.Fingerprint = res
