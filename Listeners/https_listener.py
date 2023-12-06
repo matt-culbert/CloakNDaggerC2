@@ -77,7 +77,8 @@ def session():
             structure = json.dumps(connt)  # Dump the dict to json
             connector = json.loads(structure)  # Load it into a new var
             command = connector["Command"]  # Grab the command var from the object
-            LastInteraction = connector["LastInteraction"]
+            LastInteraction = datetime.today().strftime('%Y-%m-%d')
+            lastCheckIn = connector["LastCheckIn"]
             result = connector["Result"]
             whoami = connector["WhoAmI"]
             nonce = connector["Nonce"]
@@ -85,7 +86,7 @@ def session():
             print(signature)
             #whoami, nonce, signature, retrieved, command, last interaction, last check in, result, got it
             dataSet = dbParameters(whoami, nonce, signature, "1", "0", LastInteraction,
-                                   datetime.today().strftime('%Y-%m-%d %H:%M:%S'), result, "0")
+                                   lastCheckIn, result, "0")
             if set(uuid).difference(string.ascii_letters + string.digits):
                 # We're not going to bother with input sanitization here
                 # If we receive special characters just drop it entirely
@@ -132,7 +133,7 @@ def schema():
 
 def serve():
     context = ('testServer.crt', 'testServer.key')
-    app.run(host=sys.argv[1], port=sys.argv[2], ssl_context=context)
+    app.run('test.culbertreport', 8000, ssl_context=context)
 
 
 if __name__ == "__main__":

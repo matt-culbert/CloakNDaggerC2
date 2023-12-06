@@ -157,7 +157,7 @@ while True:
         result = connector["Result"]
         byte_inp = bytes(cm, 'utf-8')
 
-        with open('../Builder/keys/' + uuid + ".pem", "rb") as key_file:  # Read in the pem file for the UUID
+        with open("../global.pem", "rb") as key_file:  # Read in the pem file for the UUID
             private_key = serialization.load_pem_private_key(key_file.read(), password=None)
         signature = private_key.sign(
             byte_inp,
@@ -236,7 +236,7 @@ while True:
         print(conn.hgetall('UUID'))  # We're searching by hash values here
     elif inp == '6':
         txt = input("Expects platform arch name listener \n"
-                       "windows amd64 first http://test.culbertreport:8000 \n"
+                       "windows amd64 first https://test.culbertreport:8000 \n"
                        "BUILDER > ")
         splits = txt.split(" ")
         builder(splits[0], splits[1], splits[2], splits[3])
