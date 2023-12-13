@@ -123,7 +123,7 @@ while True:
               '(3)Clear DB - This will remove all current entries in the DB, requiring you to generate new implants \n '
               '(4)Start a listener - The intended purpose of this is to start a specified listener \n '
               '(5)List all - List all built implants and the last check in time if available \n'
-              '(6)Implant builder - Enter the implant builder menu \n'
+              ' (6)Implant builder - Enter the implant builder menu \n'
               )
     if inp == '1':
         print('Commands possible: \n'
