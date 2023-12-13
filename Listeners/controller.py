@@ -24,10 +24,10 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def builder(platform, arch, name, listener):
-    if subprocess.Popen(f"go run builder.go {platform} {arch} {name} {listener}", shell=True, stdout=subprocess.PIPE,
-                     cwd=r'../Builder'):
-        print("Finished")
-
+    output = subprocess.Popen(f"go run builder.go {platform} {arch} {name} {listener}", shell=True,
+                                  stdout=subprocess.PIPE, cwd=r'../Builder', stderr=subprocess.PIPE)
+    res,err = output.communicate()
+    print(err)
 
 
 def clearDB():
@@ -116,6 +116,15 @@ while True:
     # If retrieved is 0, then don't display. If it's 1, display the result and then reset to 0
     inp = input('> ')
     inp = inp.lower()
+    if inp == 'help':
+        print('Quick help menu \n '
+              '(1)Enter session - This requires a UUID which can be gotten through (5) \n '
+              '(2)Search by UUID - This allows you to search by a UUID for a specific implant \n '
+              '(3)Clear DB - This will remove all current entries in the DB, requiring you to generate new implants \n '
+              '(4)Start a listener - The intended purpose of this is to start a specified listener \n '
+              '(5)List all - List all built implants and the last check in time if available \n'
+              '(6)Implant builder - Enter the implant builder menu \n'
+              )
     if inp == '1':
         print('Commands possible: \n'
               'pwd      - get the current working directory \n'
@@ -124,7 +133,6 @@ while True:
               'rd       - read a directory \n'
               'terminal - Enter a terminal command \n'
               'pid      - returns current PID \n'
-              'new_token_process  - Starts a new process with the token of your choice. Expects a PID to steal from and path \n'
               )
         uuid = input('UUID: ')
         # while inp != "exit":  # If the input is exit, break the loop
