@@ -1,6 +1,12 @@
 import base64
 import subprocess
 import redis
+from redis.commands.json.path import Path
+import redis.commands.search.aggregation as aggregations
+import redis.commands.search.reducers as reducers
+from redis.commands.search.field import TextField, NumericField, TagField
+from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+from redis.commands.search.query import NumericFilter, Query
 from datetime import datetime, time
 import json
 import cryptography.exceptions
@@ -11,6 +17,8 @@ from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from redis.commands.search.query import Query
+
 
 import binascii
 import os
@@ -95,13 +103,24 @@ def encrypt_message(key, plaintext):
 
 
 def searchUUID(uuid):
-    dt = conn.hget('UUID', uuid)
-    dt = dt.decode()  # Decode it from bytes
-    lastcheckin = json.loads(dt)  # it's returned as string so convert it to dict
-    structure = json.dumps(lastcheckin)  # Dump the dict to json
-    connector = json.loads(structure)  # Load it into a new var
-    name = connector["WhoAmI"]
-    print(name)
+    '''
+    schema = (
+        TextField("$.UUID", as_name="UUID")
+    )
+    rs = conn.ft("idx:UUID")
+    rs.create_index(
+        schema,
+        definition=IndexDefinition(
+            prefix=["UUID"], index_type=IndexType.JSON
+        )
+    )
+    dt = rs.search(
+        Query(f"UUID @UUID:[{uuid}]")
+    )
+    '''
+    dt = conn.hmget(uuid)
+
+    print(dt)
 
 
 while True:
@@ -241,7 +260,7 @@ while True:
         subprocess.Popen(["python3", "listener.py"])
     elif inp == "5":
         # print(conn.keys()) # UUID is the key, but we want values from the key
-        print(conn.hgetall('UUID'))  # We're searching by hash values here
+        print(conn.hmget('UUID', "test2"))  # Get the struct)  # We're searching by hash values here
     elif inp == '6':
         txt = input("Expects platform arch name listener \n"
                        "windows amd64 first https://test.culbertreport:8000 \n"

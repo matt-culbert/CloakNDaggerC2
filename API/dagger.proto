@@ -1,0 +1,47 @@
+syntax="proto3";
+
+option go_package = "dagger/proto/daggerProto";
+
+package dagger;
+
+message UpdateObject {
+    string UUID = 1;
+    string Whoami = 2;
+    string Signature = 3;
+    int32 Retrieved = 4;
+    string Command = 5;
+    string LastCheckIn = 6;
+    string Result = 7;
+    int32 GotIt = 8;
+}
+
+message BuildRoutine {
+    string Platform = 1;
+	string Architecture = 2;
+	string Name = 3;    
+	string Listener_address = 4;
+}
+
+message ReponseCode {
+    int32 Code = 1;
+}
+
+message getUUID {
+    string UUID = 1;
+}
+
+service hgetRecord{
+    rpc Hget(getUUID) returns (UpdateObject) {}
+}
+
+service getRecord{
+    rpc get(getUUID) returns (UpdateObject) {}
+}
+
+service Builder {
+    rpc StartBuilding(BuildRoutine) returns (ReponseCode) {}
+}
+
+service UpdateRecord {
+    rpc SendUpdate(UpdateObject) returns (ReponseCode) {}
+}
