@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 
+	"CloakNDaggerC2/dagger/proto/daggerProto"
 	pb "CloakNDaggerC2/dagger/proto/daggerProto"
 
 	"github.com/redis/go-redis/v9"
