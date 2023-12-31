@@ -1,5 +1,7 @@
 syntax="proto3";
-
+// This defines the import path that we can tell other applications to call it from
+// It will always start with the project root initialized by go mod init
+// In this case, CloakNDaggerC2
 option go_package = "dagger/proto/daggerProto";
 
 package dagger;

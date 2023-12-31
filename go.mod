@@ -1,4 +1,4 @@
-module github.com/matt-culbert/CloakNDaggerC2
+module CloakNDaggerC2
 
 go 1.20
 

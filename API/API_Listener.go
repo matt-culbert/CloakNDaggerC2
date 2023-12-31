@@ -4,13 +4,12 @@ package main
 import (
 	// go mod init dagger/proto/daggerProto - which led to the duplicate import path
 	"context"
-	"dagger/proto/daggerProto"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 
-	pb "github.com/matt-culbert/CloakNDaggerC2/API"
+	pb "CloakNDaggerC2/dagger/proto/daggerProto"
 
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"

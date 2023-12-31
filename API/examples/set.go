@@ -11,7 +11,7 @@ import (
 	"log"
 	"time"
 
-	pb "dagger/proto/daggerProto/dagger/proto/daggerProto"
+	pb "CloakNDaggerC2/dagger/proto/daggerProto"
 
 	"google.golang.org/grpc"
 )
