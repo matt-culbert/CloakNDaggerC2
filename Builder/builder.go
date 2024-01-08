@@ -4,7 +4,10 @@
 package main
 
 import (
+	"crypto/sha256"
+	"crypto/x509"
 	"embed"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,10 +16,15 @@ import (
 	"strings"
 	"text/template"
 	"uuid"
-	"crypto/x509"
-	"encoding/pem"
-	"crypto/sha256"
 )
+
+func StrH(s string) uint32 {
+	var h uint32
+	for _, c := range s {
+		h = (h << 5) + uint32(c)
+	}
+	return h
+}
 
 var (
 	//go:embed templates/*.tmpl
@@ -24,32 +32,32 @@ var (
 )
 
 type appValues struct {
-	CallBack string
-	AppName  string
-	UUID     string
-	Pubkey   string
-	ServerKey string
-	Fingerprint string
+	CallBack    string
+	AppName     string
+	UUID        string
+	Pubkey      string
+	ServerKey   string
+	Fingerprint uint32
 }
 
 func calculatePublicKeyHash(publicKeyPEM []byte) (string, error) {
-    // Decode the PEM-encoded public key
-    block, _ := pem.Decode(publicKeyPEM)
-    if block == nil {
-        return "", fmt.Errorf("failed to decode PEM block containing public key")
-    }
+	// Decode the PEM-encoded public key
+	block, _ := pem.Decode(publicKeyPEM)
+	if block == nil {
+		return "", fmt.Errorf("failed to decode PEM block containing public key")
+	}
 
-    // Parse the public key
-    cert, err := x509.ParseCertificate(block.Bytes)
-    if err != nil {
-        return "", fmt.Errorf("failed to parse certificate: %v", err)
-    }
+	// Parse the public key
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse certificate: %v", err)
+	}
 
-    // Calculate the SHA-256 hash of the raw public key bytes
-    hash := sha256.Sum256(cert.RawSubjectPublicKeyInfo)
+	// Calculate the SHA-256 hash of the raw public key bytes
+	hash := sha256.Sum256(cert.RawSubjectPublicKeyInfo)
 
-    // Return the hex-encoded hash as a string
-    return fmt.Sprintf("%x", hash), nil
+	// Return the hex-encoded hash as a string
+	return fmt.Sprintf("%x", hash), nil
 }
 
 func main() {
@@ -110,12 +118,14 @@ func main() {
 	res = strings.ToLower(res)
 	fmt.Printf(res)
 	fmt.Printf("\n")
-	values.Fingerprint = res
+	// Get the string hash of the fingerprint
+	sh := StrH(res)
+	values.Fingerprint = sh
 
 	string_cert := string(certPEM)
 	//hash, _ := calculatePublicKeyHash(certPEM)
 	string_cert_no_newLines := strings.Replace(string_cert, "\n", "", -1)
-	 //Here we need to trim the start and end from the string
+	//Here we need to trim the start and end from the string
 	string_cert_no_newLines = string_cert_no_newLines[:len(string_cert_no_newLines)-25]
 	string_cert_no_newLines = string_cert_no_newLines[27:len(string_cert_no_newLines)]
 

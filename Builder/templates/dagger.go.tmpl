@@ -22,6 +22,14 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
+func StrH(s string) uint32{
+	var h uint32
+	for _,c := range s{
+		h = (h << 5) + uint32(c)
+	}
+	return h
+}
+
 func chacha(pass string, msg string) (enc_block []byte) {
 
 	key := sha256.Sum256([]byte(pass))
@@ -122,7 +130,9 @@ func main() {
 
                     // Compare the actual fingerprint with the expected one
 
-                    if actualFingerprintStr != expectedFingerprint {
+					h1 := StrH(actualFingerprintStr)
+
+                    if h1 != expectedFingerprint {
                         return fmt.Errorf("certificate fingerprint mismatch")
                         os.Exit(1)
                     }
