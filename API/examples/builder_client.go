@@ -38,10 +38,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("did not connect : %v", err)
 	}
-	fmt.Printf("0")
 
 	defer conn.Close()
-	fmt.Printf("1")
 
 	c := pb.NewBuilderClient(conn)
 
