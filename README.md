@@ -1,6 +1,6 @@
 # Cloak & Dagger
 
-Just laying it out, I'm bad about pushing to main and sometimes break it. I do notice it fast, but yeah... I'm trying to be better.
+This is currently in a broken state as I push over to an API based infrastructure. If you would like a version that worked in the past, I believe this version should be ok https://github.com/matt-culbert/CloakNDaggerC2/commit/6a775b2ac07aa60659d8810cfc6389805430e7cf
 
 ![logo](/img/guide/cnd8.jpg)
 
