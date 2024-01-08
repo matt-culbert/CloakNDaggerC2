@@ -260,7 +260,7 @@ while True:
         subprocess.Popen(["python3", "listener.py"])
     elif inp == "5":
         # print(conn.keys()) # UUID is the key, but we want values from the key
-        print(conn.hmget('UUID', "test2"))  # Get the struct)  # We're searching by hash values here
+        print(conn.hgetall('UUID'))  # Get the struct)  # We're searching by hash values here
     elif inp == '6':
         txt = input("Expects platform arch name listener \n"
                        "windows amd64 first https://test.culbertreport:8000 \n"
