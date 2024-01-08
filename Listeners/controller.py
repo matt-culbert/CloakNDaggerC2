@@ -118,9 +118,9 @@ def searchUUID(uuid):
         Query(f"UUID @UUID:[{uuid}]")
     )
     '''
-    dt = conn.hmget(uuid)
+    dt = conn.hmget("UUID",uuid)
 
-    print(dt)
+    return dt
 
 
 while True:
@@ -253,7 +253,8 @@ while True:
 
     elif inp == '2':
         uuid = input('UUID: ')
-        searchUUID(uuid)
+        out = searchUUID(uuid)
+        print(out)
     elif inp == '3':
         clearDB()
     elif inp == "4":
