@@ -110,7 +110,7 @@ func main() {
 	uuid := "{{.UUID}}"
 	// Construct the client for requests, we define nothing right now but in the future can add functionality
 	//client := &http.Client{}
-	expectedFingerprint := "{{.Fingerprint}}"
+	var expectedFingerprint uint32 = {{.Fingerprint}}
 	client := &http.Client{
         Transport: &http.Transport{
             TLSClientConfig: &tls.Config{
@@ -127,10 +127,8 @@ func main() {
                     actualFingerprint := sha256.Sum256(peerCert.Raw)
 
                     actualFingerprintStr := hex.EncodeToString(actualFingerprint[:])
-
-                    // Compare the actual fingerprint with the expected one
-
 					h1 := StrH(actualFingerprintStr)
+                    // Compare the actual fingerprint with the expected one
 
                     if h1 != expectedFingerprint {
                         return fmt.Errorf("certificate fingerprint mismatch")

