@@ -16,3 +16,5 @@ Builder/templates/testKeyRSA
 *.crt
 *.key
 Builder/templates/first
+*.iml
+.DS_Store
