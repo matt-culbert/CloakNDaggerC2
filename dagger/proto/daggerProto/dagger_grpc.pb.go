@@ -19,6 +19,96 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	GetAll_GetAll_FullMethodName = "/dagger.GetAll/GetAll"
+)
+
+// GetAllClient is the client API for GetAll service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type GetAllClient interface {
+	GetAll(ctx context.Context, in *GetKey, opts ...grpc.CallOption) (*DbContents, error)
+}
+
+type getAllClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewGetAllClient(cc grpc.ClientConnInterface) GetAllClient {
+	return &getAllClient{cc}
+}
+
+func (c *getAllClient) GetAll(ctx context.Context, in *GetKey, opts ...grpc.CallOption) (*DbContents, error) {
+	out := new(DbContents)
+	err := c.cc.Invoke(ctx, GetAll_GetAll_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetAllServer is the server API for GetAll service.
+// All implementations must embed UnimplementedGetAllServer
+// for forward compatibility
+type GetAllServer interface {
+	GetAll(context.Context, *GetKey) (*DbContents, error)
+	mustEmbedUnimplementedGetAllServer()
+}
+
+// UnimplementedGetAllServer must be embedded to have forward compatible implementations.
+type UnimplementedGetAllServer struct {
+}
+
+func (UnimplementedGetAllServer) GetAll(context.Context, *GetKey) (*DbContents, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAll not implemented")
+}
+func (UnimplementedGetAllServer) mustEmbedUnimplementedGetAllServer() {}
+
+// UnsafeGetAllServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to GetAllServer will
+// result in compilation errors.
+type UnsafeGetAllServer interface {
+	mustEmbedUnimplementedGetAllServer()
+}
+
+func RegisterGetAllServer(s grpc.ServiceRegistrar, srv GetAllServer) {
+	s.RegisterService(&GetAll_ServiceDesc, srv)
+}
+
+func _GetAll_GetAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetKey)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GetAllServer).GetAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GetAll_GetAll_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GetAllServer).GetAll(ctx, req.(*GetKey))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// GetAll_ServiceDesc is the grpc.ServiceDesc for GetAll service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var GetAll_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "dagger.GetAll",
+	HandlerType: (*GetAllServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetAll",
+			Handler:    _GetAll_GetAll_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "dagger.proto",
+}
+
+const (
 	HgetRecord_Hget_FullMethodName = "/dagger.hgetRecord/Hget"
 )
 

@@ -1,8 +1,6 @@
-go get github.com/google/uuid
-go build Builder/builder.go
-python3 pip install -r requirements.txt
+go mod tidy
 
-python3 Builder/crypter.py
+python3 pip install -r requirements.txt
 
 openssl genrsa -out ca.key 2048 
 

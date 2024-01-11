@@ -74,6 +74,55 @@ type IIDScan struct {
 	Ignored     struct{} `redis:"-"`
 }
 
+type GetAll struct {
+	pb.UnimplementedGetAllServer
+}
+
+func (s2 *GetAll) GetAll(ctx context.Context, in *pb.GetKey) (*pb.DbContents, error) {
+	// This will allow us to search the DB for every key that matches "UUID" and dump their values
+	// This will also allow us to seach the DB for every subfield in that entry and return the LastCheckIn time
+	// We need to return the array of keys and the array of LCI
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	var entries []string
+	fmt.Printf("key is %s\n", in.GetKey())
+
+	iter := client.HScan(ctx, in.GetKey(), 0, "*", 0).Iterator()
+
+	if iter.Err() != nil {
+		fmt.Println("error itering")
+		return nil, iter.Err()
+	}
+
+	for iter.Next(ctx) {
+		// Once we have a key we need to then do a query for that key, which will allow us to get individual elements from it
+		var scanModel IIDScan
+		// Stuck right now on unmarshalling into the struct....
+		// The Result() method gets the values from the HGet call
+		vals, _ := client.HGet(ctx, "UUID", iter.Val()).Result()
+		// We need to move vals into a structured form now
+		// So this returns an error but still works for what's needed....
+		// I'm a dum dum
+		_ = json.Unmarshal([]byte(vals), &scanModel)
+
+		// We should now have the data mapped to the scan model
+		res := scanModel.LastCheckIn
+		entry := res + ", " + iter.Val() + "; "
+		entries = append(entries, entry)
+	}
+	if err := iter.Err(); err != nil {
+		fmt.Println("Error on itering")
+		return nil, err
+	}
+	fmt.Printf("total entries are %v\n", entries)
+	// We return the array of entries which should be UUID, LCI
+	return &pb.DbContents{Res: entries}, nil
+}
+
 // The name 'SendUpdate' is important here as that's the function we defined in the UpdateRecord service
 func (s1 *RecieveImpUpdate) SendUpdate(ctx context.Context, in *pb.UpdateObject) (*pb.ReponseCode, error) {
 	// The Redis connection string
@@ -200,6 +249,8 @@ func main() {
 	pb.RegisterHgetRecordServer(s2, &hgetUUID{})
 
 	pb.RegisterUpdateRecordServer(s2, &RecieveImpUpdate{})
+
+	pb.RegisterGetAllServer(s2, &GetAll{})
 
 	if err := s2.Serve(lis2); err != nil {
 		log.Fatalf("failed to serve: %v", err)

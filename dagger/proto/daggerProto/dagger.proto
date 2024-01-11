@@ -6,6 +6,11 @@ option go_package = "dagger/proto/daggerProto";
 
 package dagger;
 
+message DbContents {
+    // General search DB service
+    repeated string res = 1;
+}
+
 message UpdateObject {
     string UUID = 1;
     string Whoami = 2;
@@ -30,6 +35,14 @@ message ReponseCode {
 
 message getUUID {
     string UUID = 1;
+}
+
+message getKey {
+    string Key = 1;
+}
+
+service GetAll{
+    rpc GetAll(getKey) returns (DbContents) {}
 }
 
 service hgetRecord{
