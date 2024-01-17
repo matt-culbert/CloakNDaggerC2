@@ -14,7 +14,6 @@ class dbParameters:
     Signature: str
     Retrieved: str  # Reset retrieved so we know the command was picked up
     Command: str
-    LastInteraction: str
     LastCheckIn: str
     Result: str
     GotIt: str
@@ -31,7 +30,6 @@ def updateDB(data_struct, uuid):
         "Signature": data_struct.Signature,
         "Retrieved": data_struct.Retrieved,
         "Command": data_struct.Command,
-        "LastInteraction": data_struct.LastInteraction,
         "LastCheckIn": datetime.today().strftime('%Y-%m-%d %H:%M:%S'),
         "Result": data_struct.Result,
         "GotIt": data_struct.GotIt
@@ -77,7 +75,6 @@ def session():
             structure = json.dumps(connt)  # Dump the dict to json
             connector = json.loads(structure)  # Load it into a new var
             command = connector["Command"]  # Grab the command var from the object
-            LastInteraction = datetime.today().strftime('%Y-%m-%d')
             lastCheckIn = connector["LastCheckIn"]
             result = connector["Result"]
             whoami = connector["WhoAmI"]
@@ -85,7 +82,7 @@ def session():
             signature = connector["Signature"]
             print(signature)
             #whoami, nonce, signature, retrieved, command, last interaction, last check in, result, got it
-            dataSet = dbParameters(whoami, nonce, signature, "1", "0", LastInteraction,
+            dataSet = dbParameters(whoami, nonce, signature, "1", "0",
                                    lastCheckIn, result, "0")
             if set(uuid).difference(string.ascii_letters + string.digits):
                 # We're not going to bother with input sanitization here
@@ -117,10 +114,9 @@ def schema():
     command = json.loads(command)  # it's returned as string so convert it to dict
     structure = json.dumps(command)  # Dump the dict to json
     connector = json.loads(structure)  # Load it into a new var
-    LastInteraction = connector["LastInteraction"]
     whoami = connector["WhoAmI"]
     # whoami, nonce, signature, retrieved, command, last interaction, last check in, result, got it
-    dataSet = dbParameters(whoami, "0", "0", "1", "0", LastInteraction,
+    dataSet = dbParameters(whoami, "0", "0", "1", "0",
                            datetime.today().strftime('%Y-%m-%d %H:%M:%S'), result, "1")
     if set(uuid).difference(string.ascii_letters + string.digits):
         # We're not going to bother with input sanitization here
