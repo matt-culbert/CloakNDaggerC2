@@ -1,8 +1,6 @@
 staging*
-*.pem
 .DS_Store
 .vs
-*.pub
 *.rsa
 *.der
 *.xml
@@ -19,3 +17,4 @@ Builder/templates/first
 Builder/example
 Listeners/controller
 API/API_Listener
+Builder/templates/testKeyRSA.pub

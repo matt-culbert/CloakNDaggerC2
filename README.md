@@ -6,6 +6,8 @@ A C2 framework designed around the use of public/private RSA key pairs to sign a
 
 This is an evolution of the original Switchblade C2. Cloak refers to the C2 backend and Dagger is the implant.
 
+There are keys included here, they're purely for testing. You should expect these to be burned and thus generate your own.
+
 ### Setup
 
 Run redis in a Docker container with ```docker run --name redis -p 6379:6379 -d redis```
