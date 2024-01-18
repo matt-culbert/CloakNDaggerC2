@@ -18,13 +18,13 @@ This should be started automatically by the install script, but for future use y
 
 Make sure to run the builder server. Right now this is not started async so open a new cmd window, navigate to its folder, and run builder.go
 
+Also ensure that the API is running. This is located under the API folder so open a new tab, browse there, and start the server.
+
 Once that's done, you can build an implant from the controller located under the Listeners folder.
 
 ### Interacting with implants
 
-When you run a command, you need to specify the UUID of the implant every time. To get a list of UUIDs in the redis db, follow the on screen commands under option ```3```
-
-![example](/img/guide/example.png)
+When you run a command, you need to specify the UUID of the implant every time. 
 
 Current commands:
 - ```pwd``` gets the current working directory
