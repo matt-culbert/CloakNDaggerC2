@@ -13,8 +13,6 @@ Builder/builder
 *.csr
 *.org
 Builder/templates/testKeyRSA
-*.crt
-*.key
 Builder/templates/first
 *.iml
 .DS_Store

