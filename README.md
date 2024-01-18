@@ -37,3 +37,5 @@ Current commands:
 
 ### Known issues:
 On Kali, change the redis host in the controller and listener to 127.0.0.1 from localhost.
+
+Sometimes when building an implant, you'll get the error ```1 rpc error: code = DeadlineExceeded desc = context deadline exceeded``` but the implant will have compiled and is in the directory. Looking into this.
