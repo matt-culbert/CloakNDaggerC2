@@ -22,7 +22,7 @@ import (
 	"strings"
 	"text/template"
 	"time"
-	"uuid"
+	"github.com/google/uuid"
 
 	pb "CloakNDaggerC2/dagger/proto/daggerProto"
 
