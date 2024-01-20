@@ -261,7 +261,7 @@ func main() {
 
 			case "2":
 				var uuid string
-				fmt.Printf("Implant control menu \n")
+				fmt.Printf("Implant history menu \n")
 				fmt.Printf("Here's where you can interact with all your fun implants \n")
 				fmt.Printf("You just need to know the UUID to get started \n")
 				fmt.Printf("Type exit and hit return to leave at any time \n")
@@ -330,6 +330,14 @@ func main() {
 				if uuid == "exit" {
 					break
 				}
+				fmt.Println("'pwd' gets the current working directory ")
+				fmt.Println("'whoami' gets the current user by querying the security context ")
+				fmt.Println("'rc' runs a command through the terminal, this can be anything ")
+				fmt.Println("'rd' reads the supplied directory  ")
+				fmt.Println("'terminal' allows you to run terminal commands - NOT OPSEC SAFE ")
+				fmt.Println("'groups' returns the SID of all local groups the user is in ")
+				fmt.Println("'fing' followed by a new TLS fingerprint overwrites the one the implant currently uses ")
+				fmt.Println("Use this with the utmost care. If you put in a fingerprint that is invalid or otherwise doesn't work, you will no longer be able to execute commands")
 				fmt.Printf("%sEnter the command you want executed > %s", red, reset)
 				fmt.Scan(&cmd)
 				cmd = strings.ToLower(cmd)

