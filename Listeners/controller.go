@@ -352,7 +352,9 @@ func main() {
 				if res != 0 || err != nil {
 					fmt.Print(err)
 				}
-				fmt.Printf("Command set \n")
+				if res == 0 {
+					fmt.Printf("Command set \n")
+				}
 
 			case "5":
 				var address, port string
