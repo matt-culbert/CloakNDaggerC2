@@ -15,6 +15,7 @@ package main
 
 import (
 	// go mod init dagger/proto/daggerProto - which led to the duplicate import
+	"bufio"
 	"context"
 	"crypto"
 	"crypto/rand"
@@ -28,6 +29,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -386,7 +388,8 @@ func main() {
 				fmt.Println("'fing' followed by a new TLS fingerprint overwrites the one the implant currently uses ")
 				fmt.Println("Use this with the utmost care. If you put in a fingerprint that is invalid or otherwise doesn't work, you will no longer be able to execute commands")
 				fmt.Printf("%sEnter the command you want executed > %s", red, reset)
-				fmt.Scan(&cmd)
+				reader := bufio.NewReader(os.Stdin)
+				cmd, _ = reader.ReadString('\n')
 				cmd = strings.ToLower(cmd)
 				if cmd == "exit" {
 					break
