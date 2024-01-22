@@ -14,7 +14,6 @@ import (
 	"embed"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -123,7 +122,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 
 	unmarshaled_data := pb.BuildRoutine{}
 	proto.Unmarshal(data, &unmarshaled_data)
-	pubPEM, err := ioutil.ReadFile("global.pub.pem")
+	pubPEM, err := os.ReadFile("global.pub.pem")
 	if err != nil {
 		ResponseCode := &pb.ReponseCode{
 			Code: 1,
@@ -136,8 +135,8 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	string_pem_no_newLines := strings.Replace(string_pem, "\n", "", -1)
 	// Here we need to trim the start and end from the string
 	string_pem_no_newLines = string_pem_no_newLines[:len(string_pem_no_newLines)-24]
-	string_pem_no_newLines = string_pem_no_newLines[26:len(string_pem_no_newLines)]
-	certPEM, err := ioutil.ReadFile("server.crt")
+	string_pem_no_newLines = string_pem_no_newLines[26:]
+	certPEM, err := os.ReadFile("server.crt")
 
 	// I'm banging my head against a wall trying to trim the fingerprint in golang
 	// let's do it in bash
@@ -166,7 +165,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	string_cert_no_newLines := strings.Replace(string_cert, "\n", "", -1)
 	//Here we need to trim the start and end from the string
 	string_cert_no_newLines = string_cert_no_newLines[:len(string_cert_no_newLines)-25]
-	string_cert_no_newLines = string_cert_no_newLines[27:len(string_cert_no_newLines)]
+	string_cert_no_newLines = string_cert_no_newLines[27:]
 
 	values.CallBack = in.ListenerAddress
 	values.AppName = in.Name
