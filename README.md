@@ -16,11 +16,7 @@ This should be started automatically by the install script, but for future use y
 
 ### Generating implants
 
-Make sure to run the builder server. Right now this is not started async so open a new cmd window, navigate to its folder, and run builder.go
-
-Also ensure that the API is running. This is located under the API folder so open a new tab, browse there, and start the server.
-
-Once that's done, you can build an implant from the controller located under the Listeners folder.
+The menu option for generating implants is ```1``` so hit that and follow the onscreen instructions.
 
 ### Interacting with implants
 
@@ -38,4 +34,4 @@ Current commands:
 ### Known issues:
 On Kali, change the redis host in the controller and listener to 127.0.0.1 from localhost.
 
-Sometimes when building an implant, you'll get the error ```1 rpc error: code = DeadlineExceeded desc = context deadline exceeded``` but the implant will have compiled and is in the directory. Looking into this.
+
