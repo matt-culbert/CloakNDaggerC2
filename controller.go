@@ -236,25 +236,21 @@ func StartGRPCServers(wg *sync.WaitGroup, stopCh chan struct{}) {
 	s := grpc.NewServer()
 
 	go func() {
-		select {
-		case <-stopCh:
-			s.Stop()
+
+		pb.RegisterHgetRecordServer(s, &hgetUUID{})
+
+		pb.RegisterUpdateRecordServer(s, &RecieveImpUpdate{})
+
+		pb.RegisterGetAllServer(s, &GetAll{})
+
+		pb.RegisterBuilderServer(s, &Builder{})
+
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve a listener: %v", err)
 		}
+		close(stopCh)
 	}()
-
-	pb.RegisterHgetRecordServer(s, &hgetUUID{})
-
-	pb.RegisterUpdateRecordServer(s, &RecieveImpUpdate{})
-
-	pb.RegisterGetAllServer(s, &GetAll{})
-
-	pb.RegisterBuilderServer(s, &Builder{})
-
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve a listener: %v", err)
-	}
-	close(stopCh)
-
+	<-stopCh
 }
 
 type impInfo struct {
