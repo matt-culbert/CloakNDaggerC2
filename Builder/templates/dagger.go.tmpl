@@ -197,6 +197,7 @@ func main() {
 			result = terminal(commandToRun)
 		case "pid":
 			pid := os.Getpid()
+			result = fmt.Sprint(pid)
 		case "fing":
 			expectedFingerprint = StrH(string_contents[1])
 

@@ -222,8 +222,8 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 
 		// after setting environment variables, we compile using go build and the path to the file
 		setEnvVarExec := exec.Command("go", "build", appNamePath)
-		_, err = setEnvVarExec.Output()
-		if err != nil {
+		out, err = setEnvVarExec.Output()
+		if err != nil || out == nil {
 			ResponseCode := &pb.ReponseCode{
 				Code: 1,
 			}

@@ -1,7 +1,7 @@
 //go:build !ignorevet
 // +build !ignorevet
 
-package main
+package example
 
 // This is a testing example to demonstrate getting all results from the DB
 
