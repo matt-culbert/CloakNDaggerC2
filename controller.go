@@ -26,7 +26,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -101,15 +100,15 @@ func startListener(address, port string) (string, error) {
 }
 
 func sign(command string) (string, error) {
-	KeyPEM, err := ioutil.ReadFile("global.pem")
+	KeyPEM, _ := os.ReadFile("global.pem")
 
 	PEMBlock, _ := pem.Decode([]byte(KeyPEM))
 	if PEMBlock == nil {
-		err := errors.New("Could not parse Private Key PEM")
+		err := errors.New("could not parse private key pem \n")
 		return "", err
 	}
 
-	key, err := x509.ParsePKCS1PrivateKey(PEMBlock.Bytes)
+	key, _ := x509.ParsePKCS1PrivateKey(PEMBlock.Bytes)
 
 	toSign := []byte(command)
 	hashed := sha256.Sum256(toSign)
@@ -301,7 +300,7 @@ func main() {
 					fmt.Println(res, err)
 				case "exit":
 					fmt.Printf("Returning to the controller \n")
-					break
+
 				default:
 					fmt.Printf("The builder expects, in order, the platform to compile for, the architecture, the output file name, and the listener address to use \n")
 					fmt.Printf("windows amd64 example https://test.culbertreport:8000 \n")
@@ -332,7 +331,7 @@ func main() {
 				switch uuid {
 				case "exit":
 					fmt.Printf("Returning to the controller \n")
-					break
+
 				default:
 					res, err := UUID_info(uuid)
 					if err != nil {

@@ -1,7 +1,7 @@
 //go:build !ignorevet
 // +build !ignorevet
 
-package main
+package builder_example
 
 // This is a testing example of how you can use GRPC to write your own client to interact with the builder
 

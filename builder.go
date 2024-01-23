@@ -9,10 +9,7 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
-	"crypto/x509"
 	"embed"
-	"encoding/pem"
 	"fmt"
 	"log"
 	"os"
@@ -55,13 +52,6 @@ type ImpUpdate struct {
 	GotIt       int32
 }
 
-type ImplantStruct struct {
-	platform         string
-	architecture     string
-	name             string
-	listener_address string
-}
-
 type appValues struct {
 	CallBack    string
 	AppName     string
@@ -69,26 +59,6 @@ type appValues struct {
 	Pubkey      string
 	ServerKey   string
 	Fingerprint uint32
-}
-
-func calculatePublicKeyHash(publicKeyPEM []byte) (string, error) {
-	// Decode the PEM-encoded public key
-	block, _ := pem.Decode(publicKeyPEM)
-	if block == nil {
-		return "", fmt.Errorf("failed to decode PEM block containing public key")
-	}
-
-	// Parse the public key
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse certificate: %v", err)
-	}
-
-	// Calculate the SHA-256 hash of the raw public key bytes
-	hash := sha256.Sum256(cert.RawSubjectPublicKeyInfo)
-
-	// Return the hex-encoded hash as a string
-	return fmt.Sprintf("%x", hash), nil
 }
 
 type Builder struct {
@@ -137,6 +107,13 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	string_pem_no_newLines = string_pem_no_newLines[:len(string_pem_no_newLines)-24]
 	string_pem_no_newLines = string_pem_no_newLines[26:]
 	certPEM, err := os.ReadFile("server.crt")
+	if err != nil {
+		ResponseCode := &pb.ReponseCode{
+			Code: 1,
+		}
+		log.Printf("error reading server cert file %e \n", err)
+		return ResponseCode, err
+	}
 
 	// I'm banging my head against a wall trying to trim the fingerprint in golang
 	// let's do it in bash
@@ -145,7 +122,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 		ResponseCode := &pb.ReponseCode{
 			Code: 1,
 		}
-		log.Printf("error reading server fingerprint %e", err)
+		log.Printf("error reading server fingerprint %e \n", err)
 		return ResponseCode, err
 	}
 
@@ -161,7 +138,6 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	values.Fingerprint = h1
 
 	string_cert := string(certPEM)
-	//hash, _ := calculatePublicKeyHash(certPEM)
 	string_cert_no_newLines := strings.Replace(string_cert, "\n", "", -1)
 	//Here we need to trim the start and end from the string
 	string_cert_no_newLines = string_cert_no_newLines[:len(string_cert_no_newLines)-25]
@@ -223,7 +199,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 		fmt.Printf(" Generating PIE \n")
 		appNamePath := "Builder/templates/" + values.AppName + ".go"
 		setEnvVarExec := exec.Command("go", "build", "-buildmode", "pie", "-o", "shellcode.bin", appNamePath)
-		out, err = setEnvVarExec.Output()
+		_, err = setEnvVarExec.Output()
 		if err != nil {
 			ResponseCode := &pb.ReponseCode{
 				Code: 1,
@@ -246,7 +222,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 
 		// after setting environment variables, we compile using go build and the path to the file
 		setEnvVarExec := exec.Command("go", "build", appNamePath)
-		out, err = setEnvVarExec.Output()
+		_, err = setEnvVarExec.Output()
 		if err != nil {
 			ResponseCode := &pb.ReponseCode{
 				Code: 1,

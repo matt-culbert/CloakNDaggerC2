@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"CloakNDaggerC2/dagger/proto/daggerProto"
 	pb "CloakNDaggerC2/dagger/proto/daggerProto"
 
 	"github.com/redis/go-redis/v9"
@@ -141,7 +140,7 @@ func (s *RecieveImpUpdate) SendUpdate(ctx context.Context, in *pb.UpdateObject) 
 
 	// So we have the data marshalled into a format we can read, we now need to unmarshal it then write it to the Redis DB
 	// This creates a new struct from which we can unmarshal data to
-	unmarshaled_data := &daggerProto.UpdateObject{}
+	unmarshaled_data := &pb.UpdateObject{}
 	// Deserialize it
 	proto.Unmarshal(data, unmarshaled_data)
 
@@ -150,7 +149,7 @@ func (s *RecieveImpUpdate) SendUpdate(ctx context.Context, in *pb.UpdateObject) 
 
 	// This is overkill for now and needs a better process in the future, but
 	// Lets now map each element of the unmarshaled_data to the ImplantData struct
-	ImpData, err := json.Marshal(ImplantLayout{UUID: unmarshaled_data.UUID, Whoami: unmarshaled_data.Whoami, Signature: unmarshaled_data.Signature,
+	ImpData, _ := json.Marshal(ImplantLayout{UUID: unmarshaled_data.UUID, Whoami: unmarshaled_data.Whoami, Signature: unmarshaled_data.Signature,
 		Retrieved: unmarshaled_data.Retrieved, Command: unmarshaled_data.Command, LastCheckIn: unmarshaled_data.LastCheckIn, Result: unmarshaled_data.Result,
 		GotIt: unmarshaled_data.GotIt})
 
@@ -163,7 +162,7 @@ func (s *RecieveImpUpdate) SendUpdate(ctx context.Context, in *pb.UpdateObject) 
 	// Erm if we keep it marshaled as proto, this is always a byte array which we have trouble unmarshalling
 	// I see now, in Python I set it so the fields are flipped, UUID is the hash and the unmarshaled UUID is the key
 	//_ = client.Set(ctx, unmarshaled_data.UUID, ImpData, 0).Err()
-	err = client.HSet(ctx, "UUID", unmarshaled_data.UUID, ImpData).Err()
+	err := client.HSet(ctx, "UUID", unmarshaled_data.UUID, ImpData).Err()
 	if err != nil {
 		fmt.Println("Error on HSet for client")
 		ResponseCode := &pb.ReponseCode{
@@ -204,7 +203,7 @@ func (s *hgetUUID) Hget(ctx context.Context, in *pb.GetUUID) (*pb.UpdateObject, 
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(vals), &scanModel)
+	_ = json.Unmarshal([]byte(vals), &scanModel)
 
 	// We should now have the data mapped to the scan model
 

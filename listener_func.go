@@ -36,8 +36,6 @@ func SetIt(result, uuid string) (int32, error) {
 
 	c := pb.NewUpdateRecordClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-
 	sig := pb.NewHgetRecordClient(conn)
 
 	sig_ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -61,7 +59,7 @@ func SetIt(result, uuid string) (int32, error) {
 	currentTime := time.Now()
 	currentTimeStr := currentTime.Format("2000-01-01 00:00:00")
 
-	res, err := c.SendUpdate(ctx, &pb.UpdateObject{UUID: uuid, Whoami: "", Signature: preserved_sig,
+	res, err := c.SendUpdate(sig_ctx, &pb.UpdateObject{UUID: uuid, Whoami: "", Signature: preserved_sig,
 		Retrieved: 0, Command: preserved_command, LastCheckIn: currentTimeStr, Result: result,
 		GotIt: 0})
 
@@ -176,10 +174,7 @@ func EnableServers(address, port string) (string, error) {
 		//escaped := strconv.Quote(Res)
 		//fmt.Printf("UUID: %s checking in with result: %s \n", UUID, escaped)
 
-		code, err := SetIt(Res, UUID)
-		if code != 0 || err != nil {
-			//fmt.Print(err)
-		}
+		_, _ = SetIt(Res, UUID)
 
 	})
 
