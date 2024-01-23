@@ -1,11 +1,11 @@
+//go:build !ignorevet
+// +build !ignorevet
+
 package main
 
-// This will be the gRPC client writing to the API_Listener.go
-// The end goal will be that the Python controller and other apps can write to it
-// But this is for testing. It won't be needed for long
+// This is a testing example demonstrating a set command to set implant details in the API
 
 import (
-	// go mod init dagger/proto/daggerProto - which led to the duplicate import
 	"context"
 	"fmt"
 	"log"
@@ -14,10 +14,6 @@ import (
 	pb "CloakNDaggerC2/dagger/proto/daggerProto"
 
 	"google.golang.org/grpc"
-)
-
-const (
-	ADDRESS = "localhost:50055"
 )
 
 type ImplantInfo struct {
@@ -32,7 +28,7 @@ type ImplantInfo struct {
 }
 
 func main() {
-	conn, err := grpc.Dial(ADDRESS, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial("localhost:50055", grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect : %v", err)
 	}

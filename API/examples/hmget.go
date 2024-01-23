@@ -1,11 +1,11 @@
+//go:build !ignorevet
+// +build !ignorevet
+
 package main
 
-// This will be the gRPC client writing to the API_Listener.go
-// The end goal will be that the Python controller and other apps can write to it
-// But this is for testing. It won't be needed for long
+// This is a testing example demonstrating getting a single result
 
 import (
-	// go mod init dagger/proto/daggerProto - which led to the duplicate import
 	"context"
 	"fmt"
 	"log"
@@ -15,10 +15,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-)
-
-const (
-	ADDRESS = "localhost:50055" // hmget listener port
 )
 
 type ImplantInfo struct {
@@ -35,7 +31,7 @@ type ImplantInfo struct {
 func main() {
 	// currently freezing on this section
 	// ugh it's freezing because the server is serving the first API method first not ours
-	conn, err := grpc.Dial(ADDRESS, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.Dial("localhost:50055", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect : %v", err)
 	}
