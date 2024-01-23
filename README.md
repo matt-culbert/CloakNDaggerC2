@@ -8,6 +8,8 @@ This is an evolution of the original Switchblade C2. Cloak refers to the C2 back
 
 There are keys included here, they're purely for testing. You should expect these to be burned and thus generate your own.
 
+If you're gonna skip running the install script to set everything up, you're gonna have a bad time. Once the controller is built, run it and everything else will start alongside it.
+
 ### Setup
 
 Run redis in a Docker container with ```docker run --name redis -p 6379:6379 -d redis```
