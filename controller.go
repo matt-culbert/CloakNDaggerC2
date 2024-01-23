@@ -1,20 +1,6 @@
-/*
-Need to:
-Provide interaction with beacons through the API like setting commmands
--This is done in our examples already
-Provide the abiilty to interact with the generator
--This is also done in the examples
-We need to be able to sign messages
--Verifying the signature is already done in the implant, so how hard is it to generate a signature?
-Start all the gRPC servers and make them ready for data
-Start the listeners as needed, perhaps with the option to point to a cert of our choosing and port
--They should then be able to list all running listeners
-*/
-
 package main
 
 import (
-	// go mod init dagger/proto/daggerProto - which led to the duplicate import
 	"bufio"
 	"context"
 	"crypto"
