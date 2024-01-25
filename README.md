@@ -8,30 +8,20 @@ This is an evolution of the original Switchblade C2. Cloak refers to the C2 back
 
 There are keys included here, they're purely for testing. You should expect these to be burned and thus generate your own.
 
-If you're gonna skip running the install script to set everything up, you're gonna have a bad time. Once the controller is built, run it through ```./CloakNDaggerC2``` and voila everything starts up!
+If you're gonna skip running the install script to set everything up, you're gonna have a bad time. 
 
-### Setup
+### Requirements
+
+Go 1.20 +
+Docker
+
+### Use
 
 Run redis in a Docker container with ```docker run --name redis -p 6379:6379 -d redis```
 
-This should be started automatically by the install script, but for future use you will need this.
+When you run the install script on first use, this is started alongside it. But for the future starts, you'll need to make sure Docker is running redis.
 
-### Generating implants
-
-The menu option for generating implants is ```1``` so hit that and follow the onscreen instructions.
-
-### Interacting with implants
-
-When you run a command, you need to specify the UUID of the implant every time. 
-
-Current commands:
-- ```pwd``` gets the current working directory
-- ```gcu``` gets the current user
-- ```rc``` runs a command through the terminal, this can be anything 
-- ```rd``` reads the supplied directory. Use it with '''rd <directory path>'''
-- ```terminal``` allows you to run terminal commands - NOT OPSEC SAFE
-- ```groups``` returns the SID of all local groups the user is in
-- ```pid``` returns the current process ID
+Once the script builds the main program, run it through ```./CloakNDaggerC2``` and voila everything starts up!
 
 ### Known issues:
 None right now
