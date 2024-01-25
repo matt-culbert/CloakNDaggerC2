@@ -25,6 +25,6 @@ When you run the install script on first use, this is started alongside it. But 
 Once the script builds the main program, run it through ```./CloakNDaggerC2``` and voila everything starts up!
 
 ### Known issues:
-None right now
+If you look at it in a debugger and search for http strings, you'll quickly find the listener address. This is because there is a non failing error to do with an incorrect header. Trying to fix that but for now it's a great point to analysts to look at and find C2's.
 
 
