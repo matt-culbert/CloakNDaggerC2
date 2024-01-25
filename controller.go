@@ -452,7 +452,7 @@ func main() {
 	blue := "\033[34m"
 	reset := "\033[0m"
 
-	for true {
+	for {
 		var input string
 		for {
 			fmt.Printf("\n%sDagger controller home menu \n%s", yellow, reset)
