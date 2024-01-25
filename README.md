@@ -34,6 +34,6 @@ Current commands:
 - ```pid``` returns the current process ID
 
 ### Known issues:
-On Kali, change the redis host in the controller and listener to 127.0.0.1 from localhost.
+None right now
 
 
