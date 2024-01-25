@@ -59,6 +59,8 @@ type appValues struct {
 	Pubkey      string
 	ServerKey   string
 	Fingerprint uint32
+	Sleep       int32 // Sleep is a simple int for defining the sleep in seconds
+	Jitter      int8  // The jitter is an int here but comes in as high/medium/low
 }
 
 type Builder struct {
@@ -148,6 +150,17 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	values.UUID = uuid
 	values.Pubkey = string_pem_no_newLines
 	values.ServerKey = string_cert_no_newLines
+	values.Sleep = in.Sleep
+	switch in.Jitter {
+	case "high":
+		values.Jitter = 50
+	case "medium":
+		values.Jitter = 25
+	case "low":
+		values.Jitter = 10
+	default:
+		values.Jitter = 5
+	}
 
 	// Get the current working dir
 	mydir, _ := os.Getwd()

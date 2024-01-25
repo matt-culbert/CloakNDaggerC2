@@ -27,6 +27,8 @@ message BuildRoutine {
 	string Architecture = 2;
 	string Name = 3;    
 	string Listener_address = 4;
+    int32 Sleep = 5;
+    string Jitter = 6;
 }
 
 message ReponseCode {

