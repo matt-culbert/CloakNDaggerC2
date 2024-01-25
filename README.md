@@ -13,6 +13,7 @@ If you're gonna skip running the install script to set everything up, you're gon
 ### Requirements
 
 Go 1.20 +
+
 Docker
 
 ### Use
