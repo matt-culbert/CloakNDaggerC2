@@ -472,7 +472,6 @@ func main() {
 				fmt.Printf("5 will let you start a listener on an address and port combo \n")
 				fmt.Printf("'help' will bring you to this menu \n")
 			case input == "1":
-				fmt.Printf(input)
 				var platform, arch, name, listener, jitter string
 				var sleep int32
 				fmt.Printf("Build menu \n")
@@ -592,7 +591,7 @@ func main() {
 					break
 				}
 				det := true
-				for det == true {
+				for det {
 					fmt.Println("'pwd' gets the current working directory ")
 					fmt.Println("'gcu' gets the current user by querying the security context ")
 					fmt.Println("'rc' runs a command through the terminal, this can be anything ")
