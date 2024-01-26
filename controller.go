@@ -81,17 +81,8 @@ func SetIt(result, uuid string) (int32, error) {
 
 	prior_result := preserved_field.Result
 
-	preserved_checkin := preserved_field.LastCheckIn
-
 	currentTime := time.Now()
 	currentTimeStr := currentTime.Format(time.RFC1123)
-
-	if preserved_checkin == "" {
-		fmt.Printf("\033[s")      // save  cursor position
-		fmt.Printf("\033[%dA", 2) // move up 2
-		fmt.Printf("\nNew implant check-in at %s from %s \n", currentTimeStr, uuid)
-		fmt.Printf("\033[u") // undo the move down
-	}
 
 	if prior_result != result {
 		fmt.Printf("\033[s")
@@ -129,26 +120,51 @@ func UUID_info_func(UUID string) (impInfoStruct, error) {
 
 	defer conn.Close()
 
-	c := pb.NewHgetRecordClient(conn)
+	c1 := pb.NewHgetRecordClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 
 	defer cancel()
 
-	result := pb.NewHgetRecordClient(conn)
+	pres := pb.NewHgetRecordClient(conn)
 
-	ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second)
-
-	defer cancel2()
-
-	preserved_field, err := result.Hget(ctx2, &pb.GetUUID{UUID: UUID})
+	preserved_field, err := pres.Hget(ctx, &pb.GetUUID{UUID: UUID})
 
 	if err != nil {
 		return impInfoStruct{}, err
 	}
-	preserved_result := preserved_field.Result
 
-	res, err := c.Hget(ctx, &pb.GetUUID{UUID: UUID})
+	preserved_result := preserved_field.Result
+	preserved_command := preserved_field.Command
+
+	c2 := pb.NewUpdateRecordClient(conn)
+
+	sig_ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+
+	defer cancel()
+
+	currentTime := time.Now()
+	currentTimeStr := currentTime.Format(time.RFC1123)
+	preserved_checkin := preserved_field.LastCheckIn
+	preserved_sig := preserved_field.Signature
+
+	if preserved_checkin == "" {
+		// This lets us know when a new implant checks in for the first time
+		fmt.Printf("\033[s")      // save  cursor position
+		fmt.Printf("\033[%dA", 2) // move up 2
+		fmt.Printf("\nNew implant check-in at %s from %s \n", currentTimeStr, UUID)
+		fmt.Printf("\033[u") // undo the move down
+		_, err := c2.SendUpdate(sig_ctx, &pb.UpdateObject{UUID: UUID, Whoami: "", Signature: preserved_sig,
+			Retrieved: 0, Command: preserved_command, LastCheckIn: currentTimeStr, Result: preserved_result,
+			GotIt: 1})
+		if err != nil {
+			return impInfoStruct{}, err
+		}
+
+		return impInfoStruct{}, nil
+	}
+
+	res, err := c1.Hget(ctx, &pb.GetUUID{UUID: UUID})
 
 	if err != nil {
 		return impInfoStruct{}, err
