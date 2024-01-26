@@ -67,7 +67,7 @@ type Builder struct {
 	pb.UnimplementedBuilderServer
 }
 
-func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.ReponseCode, error) {
+func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.ResponseCode, error) {
 	// Generate and format the UUID
 	uuidWithHyphen := uuid.New()
 	uuid := strings.Replace(uuidWithHyphen.String(), "-", "", -1)
@@ -85,7 +85,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 
 	data, err := proto.Marshal(ImplantInfo)
 	if err != nil {
-		ResponseCode := &pb.ReponseCode{
+		ResponseCode := &pb.ResponseCode{
 			Code: 1,
 		}
 		log.Printf("error marshalling data %e", err)
@@ -96,7 +96,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	proto.Unmarshal(data, &unmarshaled_data)
 	pubPEM, err := os.ReadFile("global.pub.pem")
 	if err != nil {
-		ResponseCode := &pb.ReponseCode{
+		ResponseCode := &pb.ResponseCode{
 			Code: 1,
 		}
 		log.Printf("error reading global pem file, did you not update it here? %e", err)
@@ -110,7 +110,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	string_pem_no_newLines = string_pem_no_newLines[26:]
 	certPEM, err := os.ReadFile("server.crt")
 	if err != nil {
-		ResponseCode := &pb.ReponseCode{
+		ResponseCode := &pb.ResponseCode{
 			Code: 1,
 		}
 		log.Printf("error reading server cert file %e \n", err)
@@ -121,7 +121,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	// let's do it in bash
 	out, err := exec.Command("openssl", "x509", "-in", "server.crt", "-fingerprint", "-sha256").Output()
 	if err != nil {
-		ResponseCode := &pb.ReponseCode{
+		ResponseCode := &pb.ResponseCode{
 			Code: 1,
 		}
 		log.Printf("error reading server fingerprint %e \n", err)
@@ -178,7 +178,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	 */
 	if templates, err = template.ParseFS(rootFs, "Builder/templates/*.tmpl"); err != nil {
 		if err != nil {
-			ResponseCode := &pb.ReponseCode{
+			ResponseCode := &pb.ResponseCode{
 				Code: 1,
 			}
 			log.Printf("error on template parsing %e", err)
@@ -189,7 +189,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	// Check if the template exists
 	for templateName, outputPath := range rootFsMapping {
 		if fp, err = os.Create(outputPath); err != nil {
-			ResponseCode := &pb.ReponseCode{
+			ResponseCode := &pb.ResponseCode{
 				Code: 1,
 			}
 			log.Printf("error on output path %e", err)
@@ -199,7 +199,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 		defer fp.Close()
 
 		if err = templates.ExecuteTemplate(fp, templateName, values); err != nil {
-			ResponseCode := &pb.ReponseCode{
+			ResponseCode := &pb.ResponseCode{
 				Code: 1,
 			}
 			log.Printf("%e", err)
@@ -214,13 +214,13 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 		setEnvVarExec := exec.Command("go", "build", "-buildmode", "pie", "-o", "shellcode.bin", appNamePath)
 		_, err = setEnvVarExec.Output()
 		if err != nil {
-			ResponseCode := &pb.ReponseCode{
+			ResponseCode := &pb.ResponseCode{
 				Code: 1,
 			}
 			log.Printf("%e", err)
 			return ResponseCode, err
 		}
-		ResponseCode := &pb.ReponseCode{
+		ResponseCode := &pb.ResponseCode{
 			Code: 0,
 		}
 		return ResponseCode, err
@@ -237,13 +237,13 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 		setEnvVarExec := exec.Command("go", "build", appNamePath)
 		out, err = setEnvVarExec.Output()
 		if err != nil || out == nil {
-			ResponseCode := &pb.ReponseCode{
+			ResponseCode := &pb.ResponseCode{
 				Code: 1,
 			}
 			log.Printf("%e", err)
 			return ResponseCode, err
 		}
-		ResponseCode := &pb.ReponseCode{
+		ResponseCode := &pb.ResponseCode{
 			Code: 0,
 		}
 
@@ -270,16 +270,16 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 
 		if err != nil {
 			log.Fatalf("could not save implant: %v", err)
-			ResponseCode = &pb.ReponseCode{
+			ResponseCode = &pb.ResponseCode{
 				Code: 1,
 			}
 		}
 		if res.GetCode() != 0 {
-			ResponseCode = &pb.ReponseCode{
+			ResponseCode = &pb.ResponseCode{
 				Code: 1,
 			}
 		}
-		ResponseCode = &pb.ReponseCode{
+		ResponseCode = &pb.ResponseCode{
 			Code: 0,
 		}
 

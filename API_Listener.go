@@ -45,6 +45,14 @@ type hgetUUID struct {
 	pb.UnimplementedHgetRecordServer
 }
 
+type Rkey struct {
+	pb.UnimplementedRemoveServer
+}
+
+type GetAll struct {
+	pb.UnimplementedGetAllServer
+}
+
 type ImplantLayout struct {
 	UUID        string   `redis:"UUID"`
 	Whoami      string   `redis:"WhoAmI"`
@@ -70,8 +78,31 @@ type IIDScan struct {
 	Ignored     struct{} `redis:"-"`
 }
 
-type GetAll struct {
-	pb.UnimplementedGetAllServer
+func (s *Rkey) RemKey(ctx context.Context, in *pb.DelKey) (*pb.ResponseCode, error) {
+	fmt.Println("Removing key")
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	err := client.Del(ctx, in.Key)
+	if err != nil {
+		fmt.Println("Error on removing uuid")
+		ResponseCode := &pb.ResponseCode{
+			Code: 1,
+		}
+		return ResponseCode, nil
+	} else {
+		ResponseCode := &pb.ResponseCode{
+			Code: 0,
+		}
+		// We return the response code of the action to update the redisdb
+		// If success, we return a 0. If the operation to HSet fails, we return a 1
+		// Could possibly use a more verbose error message in the future
+		// But for now we know the error occurs when HSet'ng so that's good enough
+		return ResponseCode, nil
+	}
 }
 
 func (s *GetAll) GetAll(ctx context.Context, in *pb.GetKey) (*pb.DbContents, error) {
@@ -116,7 +147,7 @@ func (s *GetAll) GetAll(ctx context.Context, in *pb.GetKey) (*pb.DbContents, err
 }
 
 // The name 'SendUpdate' is important here as that's the function we defined in the UpdateRecord service
-func (s *RecieveImpUpdate) SendUpdate(ctx context.Context, in *pb.UpdateObject) (*pb.ReponseCode, error) {
+func (s *RecieveImpUpdate) SendUpdate(ctx context.Context, in *pb.UpdateObject) (*pb.ResponseCode, error) {
 	// The Redis connection string
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -165,12 +196,12 @@ func (s *RecieveImpUpdate) SendUpdate(ctx context.Context, in *pb.UpdateObject) 
 	err := client.HSet(ctx, "UUID", unmarshaled_data.UUID, ImpData).Err()
 	if err != nil {
 		fmt.Println("Error on HSet for client")
-		ResponseCode := &pb.ReponseCode{
+		ResponseCode := &pb.ResponseCode{
 			Code: 1,
 		}
 		return ResponseCode, nil
 	} else {
-		ResponseCode := &pb.ReponseCode{
+		ResponseCode := &pb.ResponseCode{
 			Code: 0,
 		}
 		// We return the response code of the action to update the redisdb

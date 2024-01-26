@@ -31,7 +31,7 @@ message BuildRoutine {
     string Jitter = 6;
 }
 
-message ReponseCode {
+message ResponseCode {
     int32 Code = 1;
 }
 
@@ -41,6 +41,14 @@ message getUUID {
 
 message getKey {
     string Key = 1;
+}
+
+message DelKey{
+    string Key = 1;
+}
+
+service Remove{
+    rpc RemKey(DelKey) returns (ResponseCode) {}
 }
 
 service GetAll{
@@ -56,9 +64,9 @@ service getRecord{
 }
 
 service Builder {
-    rpc StartBuilding(BuildRoutine) returns (ReponseCode) {}
+    rpc StartBuilding(BuildRoutine) returns (ResponseCode) {}
 }
 
 service UpdateRecord {
-    rpc SendUpdate(UpdateObject) returns (ReponseCode) {}
+    rpc SendUpdate(UpdateObject) returns (ResponseCode) {}
 }

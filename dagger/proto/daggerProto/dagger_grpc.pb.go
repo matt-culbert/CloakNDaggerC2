@@ -19,6 +19,96 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	Remove_RemKey_FullMethodName = "/dagger.Remove/RemKey"
+)
+
+// RemoveClient is the client API for Remove service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type RemoveClient interface {
+	RemKey(ctx context.Context, in *DelKey, opts ...grpc.CallOption) (*ResponseCode, error)
+}
+
+type removeClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewRemoveClient(cc grpc.ClientConnInterface) RemoveClient {
+	return &removeClient{cc}
+}
+
+func (c *removeClient) RemKey(ctx context.Context, in *DelKey, opts ...grpc.CallOption) (*ResponseCode, error) {
+	out := new(ResponseCode)
+	err := c.cc.Invoke(ctx, Remove_RemKey_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RemoveServer is the server API for Remove service.
+// All implementations must embed UnimplementedRemoveServer
+// for forward compatibility
+type RemoveServer interface {
+	RemKey(context.Context, *DelKey) (*ResponseCode, error)
+	mustEmbedUnimplementedRemoveServer()
+}
+
+// UnimplementedRemoveServer must be embedded to have forward compatible implementations.
+type UnimplementedRemoveServer struct {
+}
+
+func (UnimplementedRemoveServer) RemKey(context.Context, *DelKey) (*ResponseCode, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemKey not implemented")
+}
+func (UnimplementedRemoveServer) mustEmbedUnimplementedRemoveServer() {}
+
+// UnsafeRemoveServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to RemoveServer will
+// result in compilation errors.
+type UnsafeRemoveServer interface {
+	mustEmbedUnimplementedRemoveServer()
+}
+
+func RegisterRemoveServer(s grpc.ServiceRegistrar, srv RemoveServer) {
+	s.RegisterService(&Remove_ServiceDesc, srv)
+}
+
+func _Remove_RemKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DelKey)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RemoveServer).RemKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Remove_RemKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RemoveServer).RemKey(ctx, req.(*DelKey))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// Remove_ServiceDesc is the grpc.ServiceDesc for Remove service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Remove_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "dagger.Remove",
+	HandlerType: (*RemoveServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RemKey",
+			Handler:    _Remove_RemKey_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "dagger.proto",
+}
+
+const (
 	GetAll_GetAll_FullMethodName = "/dagger.GetAll/GetAll"
 )
 
@@ -296,7 +386,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BuilderClient interface {
-	StartBuilding(ctx context.Context, in *BuildRoutine, opts ...grpc.CallOption) (*ReponseCode, error)
+	StartBuilding(ctx context.Context, in *BuildRoutine, opts ...grpc.CallOption) (*ResponseCode, error)
 }
 
 type builderClient struct {
@@ -307,8 +397,8 @@ func NewBuilderClient(cc grpc.ClientConnInterface) BuilderClient {
 	return &builderClient{cc}
 }
 
-func (c *builderClient) StartBuilding(ctx context.Context, in *BuildRoutine, opts ...grpc.CallOption) (*ReponseCode, error) {
-	out := new(ReponseCode)
+func (c *builderClient) StartBuilding(ctx context.Context, in *BuildRoutine, opts ...grpc.CallOption) (*ResponseCode, error) {
+	out := new(ResponseCode)
 	err := c.cc.Invoke(ctx, Builder_StartBuilding_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -320,7 +410,7 @@ func (c *builderClient) StartBuilding(ctx context.Context, in *BuildRoutine, opt
 // All implementations must embed UnimplementedBuilderServer
 // for forward compatibility
 type BuilderServer interface {
-	StartBuilding(context.Context, *BuildRoutine) (*ReponseCode, error)
+	StartBuilding(context.Context, *BuildRoutine) (*ResponseCode, error)
 	mustEmbedUnimplementedBuilderServer()
 }
 
@@ -328,7 +418,7 @@ type BuilderServer interface {
 type UnimplementedBuilderServer struct {
 }
 
-func (UnimplementedBuilderServer) StartBuilding(context.Context, *BuildRoutine) (*ReponseCode, error) {
+func (UnimplementedBuilderServer) StartBuilding(context.Context, *BuildRoutine) (*ResponseCode, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartBuilding not implemented")
 }
 func (UnimplementedBuilderServer) mustEmbedUnimplementedBuilderServer() {}
@@ -386,7 +476,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UpdateRecordClient interface {
-	SendUpdate(ctx context.Context, in *UpdateObject, opts ...grpc.CallOption) (*ReponseCode, error)
+	SendUpdate(ctx context.Context, in *UpdateObject, opts ...grpc.CallOption) (*ResponseCode, error)
 }
 
 type updateRecordClient struct {
@@ -397,8 +487,8 @@ func NewUpdateRecordClient(cc grpc.ClientConnInterface) UpdateRecordClient {
 	return &updateRecordClient{cc}
 }
 
-func (c *updateRecordClient) SendUpdate(ctx context.Context, in *UpdateObject, opts ...grpc.CallOption) (*ReponseCode, error) {
-	out := new(ReponseCode)
+func (c *updateRecordClient) SendUpdate(ctx context.Context, in *UpdateObject, opts ...grpc.CallOption) (*ResponseCode, error) {
+	out := new(ResponseCode)
 	err := c.cc.Invoke(ctx, UpdateRecord_SendUpdate_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -410,7 +500,7 @@ func (c *updateRecordClient) SendUpdate(ctx context.Context, in *UpdateObject, o
 // All implementations must embed UnimplementedUpdateRecordServer
 // for forward compatibility
 type UpdateRecordServer interface {
-	SendUpdate(context.Context, *UpdateObject) (*ReponseCode, error)
+	SendUpdate(context.Context, *UpdateObject) (*ResponseCode, error)
 	mustEmbedUnimplementedUpdateRecordServer()
 }
 
@@ -418,7 +508,7 @@ type UpdateRecordServer interface {
 type UnimplementedUpdateRecordServer struct {
 }
 
-func (UnimplementedUpdateRecordServer) SendUpdate(context.Context, *UpdateObject) (*ReponseCode, error) {
+func (UnimplementedUpdateRecordServer) SendUpdate(context.Context, *UpdateObject) (*ResponseCode, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendUpdate not implemented")
 }
 func (UnimplementedUpdateRecordServer) mustEmbedUnimplementedUpdateRecordServer() {}
