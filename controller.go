@@ -87,15 +87,15 @@ func SetIt(result, uuid string) (int32, error) {
 	currentTimeStr := currentTime.Format(time.RFC1123)
 
 	if preserved_checkin == "" {
-		fmt.Printf("\033[s")
-		fmt.Printf("\033[%dD", 2)
+		fmt.Printf("\033[s")      // save  cursor position
+		fmt.Printf("\033[%dA", 2) // move up 2
 		fmt.Printf("\nNew implant check-in at %s from %s \n", currentTimeStr, uuid)
-		fmt.Printf("\033[u")
+		fmt.Printf("\033[u") // undo the move down
 	}
 
 	if prior_result != result {
 		fmt.Printf("\033[s")
-		fmt.Printf("\033[%dD", 2)
+		fmt.Printf("\033[%dA", 2)
 		fmt.Printf("\nNew result %s from implant %s that ran command %s \n", result, uuid, preserved_command)
 		fmt.Printf("\033[u")
 
