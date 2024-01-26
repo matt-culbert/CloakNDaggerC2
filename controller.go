@@ -72,11 +72,17 @@ func SetIt(result, uuid string) (int32, error) {
 	preserved_checkin := preserved_field.LastCheckIn
 
 	if preserved_checkin == "" {
+		fmt.Printf("\033[%dA", 2)
+		fmt.Println()
 		fmt.Printf("\nNew implant check-in from %s \n", uuid)
+		fmt.Printf("\033[%dC", 10)
 	}
 
 	if prior_result != result {
+		fmt.Printf("\033[%dA", 2)
+		fmt.Println()
 		fmt.Printf("\nNew result %s from implant %s that ran command %s \n", result, uuid, preserved_command)
+		fmt.Printf("\033[%dC", 10)
 
 	}
 
@@ -174,15 +180,7 @@ func EnableServers(address, port string) (string, error) {
 		// This will return information
 		// Need to use the UUID to get the command in the DB
 		UUID := r.Header.Get("APPSESSIONID")
-		//fmt.Printf("UUID: %s requesting command \n", UUID)
-
-		//_, err := UUID_info_func(UUID)
-		// We check if it exists and, if not, then we break out of the loop
-		// err should be nil if the UUID exists
-		//if err != nil {
-		//	fmt.Println("No such UUID")
-		//}
-
+		UUID = strings.ToLower(UUID)
 		res, err := UUID_info_func(UUID)
 
 		//fmt.Printf("Signature: %s, Command %s \n", res.Signature, res.Command)
@@ -198,6 +196,7 @@ func EnableServers(address, port string) (string, error) {
 		// This will need to get information from the body of the request
 		// That info is then fed into the API
 		UUID := r.Header.Get("APPSESSIONID")
+		UUID = strings.ToLower(UUID)
 		Res := r.Header.Get("Res")
 
 		_, _ = SetIt(Res, UUID)
@@ -207,12 +206,14 @@ func EnableServers(address, port string) (string, error) {
 	server := &http.Server{}
 
 	// The goroutine here allows us to serve the listeners and then move back to the main program
-	go func() {
+	go func() error {
 		err = server.Serve(listener)
 		if err != nil {
-			//fmt.Printf("Error: %e\n", err)
-			os.Exit(1)
+			fmt.Printf("Error: %e\n", err)
+			return err
+			//os.Exit(1)
 		}
+		return nil
 	}()
 	return "0", nil
 

