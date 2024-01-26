@@ -88,7 +88,7 @@ func (s *Rkey) RemKey(ctx context.Context, in *pb.DelKey) (*pb.ResponseCode, err
 
 	err := client.Del(ctx, in.Key)
 	if err != nil {
-		fmt.Println("Error on removing uuid")
+		//fmt.Println("Error on removing uuid")
 		ResponseCode := &pb.ResponseCode{
 			Code: 1,
 		}

@@ -32,5 +32,3 @@ Once the script builds the main program, run it through ```./CloakNDaggerC2``` a
 If you look at it in a debugger and search for http strings, you'll quickly find the listener address. This is because there is a non failing error to do with an incorrect header. Trying to fix that but for now it's a great point to analysts to look at and find C2's.
 
 Upon building your first implant for a platform, you will get an error on the status and control will return to the main function. Then after a moment the UUID will be displayed and a message that it was added to the DB.
-
-Command signing doesn't work right now, troubleshooting this and where it went wrong.

