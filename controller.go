@@ -754,6 +754,7 @@ func main() {
 				fmt.Printf("3 will you to list all implants in the DB \n")
 				fmt.Printf("4 allows you to interact with implants by setting commands \n")
 				fmt.Printf("5 will let you start a listener on an address and port combo \n")
+				fmt.Printf("6 lets you clear the DB \n")
 				fmt.Printf("'help' will bring you to this menu \n")
 
 			default:
@@ -761,9 +762,10 @@ func main() {
 				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
 				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
 				fmt.Printf("2 will bring you to the implant info menu where you can find the last command run and the result \n")
-				fmt.Printf("3 will you to list all implants in the DB \n")
+				fmt.Printf("3 allows you to list all implants in the DB \n")
 				fmt.Printf("4 allows you to interact with implants by setting commands \n")
 				fmt.Printf("5 will let you start a listener on an address and port combo \n")
+				fmt.Printf("6 lets you clear the DB \n")
 				fmt.Printf("'help' will bring you to this menu \n")
 			}
 		}
