@@ -2,25 +2,23 @@
 
 ![logo](/img/guide/cnd8.jpg)
 
-This is an evolution of the original Switchblade C2. Cloak refers to the C2 backend and Dagger is the implant.
-
 There are keys included here, they're purely for testing. You should expect these to be burned and thus generate your own.
 
 If you're gonna skip running the install script to set everything up, you're gonna have a bad time. 
 
 ## So what is this?
 
-Simply put, CloakNDagger is a framework designed around the use of public/private RSA key pairs to sign and authenticate commands being executed. This prevents MiTM interception of calls and ensures opsec during delicate operations. Any command sent to the implant to be executed must be signed and that signature must be verified before execution. The implant also uses fingerprinting of the listeners TLS certs in order to verify that they are indeed correct when every request for a command is sent. If any part of this is incorrect, the implant will stop. This is intended to be a redundant failure point, if one piece of this stops working correctly you still have the other that you can rely on to verify authenticity.
+Simply put, CloakNDagger is a framework designed around the use of public/private RSA key pairs to sign and authenticate commands being executed. This prevents MiTM interception of calls and ensures opsec during delicate operations. Any command sent to the implant to be executed must be signed and that signature must be verified before execution. The implant also uses fingerprinting of the listeners TLS certs in order to verify that they are indeed correct when every request for a command is sent. This is intended to be a redundant failure point, if one these checks stops working correctly you still have the other that you can rely on to verify authenticity.
 
 Commands are primarily run through the os and os/user packages from Go. These allow you to perform many operations without needing to go through the command interpreter. This is because they have abstracted SYSCALLs away from the user and do the heavy lifting of implementing them for you. 
 
-### Requirements
+## Requirements
 
 Go 1.20 +
 
 Docker
 
-### Use
+## Use
 
 Run redis in a Docker container with ```docker run --name redis -p 6379:6379 -d redis```
 
