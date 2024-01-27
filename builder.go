@@ -163,9 +163,9 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	}
 
 	// Get the current working dir
-	mydir, _ := os.Getwd()
+	//mydir, _ := os.Getwd()
 	rootFsMapping := map[string]string{
-		"dagger.go.tmpl": mydir + "/Builder/templates/" + values.AppName + ".go",
+		"dagger.go.tmpl": values.AppName + ".go",
 	}
 
 	fmt.Printf("Template mapped \n")
@@ -210,7 +210,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	switch in.GetArchitecture() {
 	case "pie":
 		fmt.Printf(" Generating PIE \n")
-		appNamePath := "Builder/templates/" + values.AppName + ".go"
+		appNamePath := values.AppName + ".go"
 		setEnvVarExec := exec.Command("go", "build", "-buildmode", "pie", "-o", "shellcode.bin", appNamePath)
 		_, err = setEnvVarExec.Output()
 		if err != nil {
@@ -227,7 +227,7 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 
 	default:
 		// We set the app name and full path here for use later
-		appNamePath := "Builder/templates/" + values.AppName + ".go"
+		appNamePath := values.AppName + ".go"
 		// we set these as global compile options
 		os.Setenv("GOOS", in.GetPlatform())
 		os.Setenv("GOARCH", in.GetArchitecture())
