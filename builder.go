@@ -59,8 +59,10 @@ type appValues struct {
 	Pubkey      string
 	ServerKey   string
 	Fingerprint uint32
-	Sleep       int32 // Sleep is a simple int for defining the sleep in seconds
-	Jitter      int8  // The jitter is an int here but comes in as high/medium/low
+	Sleep       int32  // Sleep is a simple int for defining the sleep in seconds
+	Jitter      int8   // The jitter is an int here but comes in as high/medium/low
+	GetURL      string // The URI to get the command
+	PostURL     string // The URI to send results
 }
 
 type Builder struct {
@@ -151,6 +153,8 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	values.Pubkey = string_pem_no_newLines
 	values.ServerKey = string_cert_no_newLines
 	values.Sleep = in.Sleep
+	values.GetURL = in.GetURL
+	values.PostURL = in.PostURL
 	switch in.Jitter {
 	case "high":
 		values.Jitter = 50

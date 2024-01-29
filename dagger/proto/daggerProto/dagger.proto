@@ -29,6 +29,8 @@ message BuildRoutine {
 	string Listener_address = 4;
     int32 Sleep = 5;
     string Jitter = 6;
+    string GetURL = 7;
+    string PostURL = 8;
 }
 
 message ResponseCode {

