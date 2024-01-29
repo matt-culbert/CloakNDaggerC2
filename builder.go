@@ -110,14 +110,6 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	// Here we need to trim the start and end from the string
 	string_pem_no_newLines = string_pem_no_newLines[:len(string_pem_no_newLines)-24]
 	string_pem_no_newLines = string_pem_no_newLines[26:]
-	certPEM, err := os.ReadFile("server.crt")
-	if err != nil {
-		ResponseCode := &pb.ResponseCode{
-			Code: 1,
-		}
-		log.Printf("error reading server cert file %e \n", err)
-		return ResponseCode, err
-	}
 
 	// I'm banging my head against a wall trying to trim the fingerprint in golang
 	// let's do it in bash
@@ -141,17 +133,10 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	h1 := StrH(res)
 	values.Fingerprint = h1
 
-	string_cert := string(certPEM)
-	string_cert_no_newLines := strings.Replace(string_cert, "\n", "", -1)
-	//Here we need to trim the start and end from the string
-	string_cert_no_newLines = string_cert_no_newLines[:len(string_cert_no_newLines)-25]
-	string_cert_no_newLines = string_cert_no_newLines[27:]
-
 	values.CallBack = in.ListenerAddress
 	values.AppName = in.Name
 	values.UUID = uuid
 	values.Pubkey = string_pem_no_newLines
-	values.ServerKey = string_cert_no_newLines
 	values.Sleep = in.Sleep
 	values.GetURL = in.GetURL
 	values.PostURL = in.PostURL

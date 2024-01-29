@@ -28,6 +28,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+var LogFile *os.File
+
 type impInfo struct {
 	UUID        string
 	Whoami      string
@@ -48,6 +50,15 @@ type impInfoStruct struct {
 	LastCheckIn string
 	Result      string
 	GotIt       int32
+}
+
+func initializeLogger() {
+	LogFile, err := os.OpenFile("commands.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("error opening log file %e", err)
+	}
+	log.SetOutput(LogFile)
+
 }
 
 func SetIt(result, uuid string) (int32, error) {
@@ -89,6 +100,8 @@ func SetIt(result, uuid string) (int32, error) {
 		fmt.Printf("\033[%dA", 2)
 		fmt.Printf("\nNew result %s from implant %s that ran command %s \n", result, uuid, preserved_command)
 		fmt.Printf("\033[u")
+
+		log.Printf(currentTimeStr, result, uuid, preserved_command)
 
 	}
 
@@ -521,6 +534,8 @@ func empty(s string) bool {
 }
 
 func main() {
+	initializeLogger()
+	defer initializeLogger()
 	var wg sync.WaitGroup
 	stopCh := make(chan struct{})
 

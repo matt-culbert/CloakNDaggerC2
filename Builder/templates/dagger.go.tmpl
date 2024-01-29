@@ -106,7 +106,6 @@ func getCurrentUser() (name string) {
 var expectedFingerprint uint32
 
 func main() {
-    const serverCert = "-----BEGIN CERTIFICATE-----\n{{.ServerKey}}\n-----END CERTIFICATE-----"
 
 	const pubKeyPEM = "-----BEGIN PUBLIC KEY-----\n{{.Pubkey}}\n-----END PUBLIC KEY-----"
 	PEMBlock, _ := pem.Decode([]byte(pubKeyPEM))
