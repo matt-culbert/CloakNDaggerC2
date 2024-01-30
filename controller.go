@@ -534,7 +534,6 @@ func build(platform, arch, name, listener, jitter, GetURI, PostURI string, sleep
 
 func empty(s string) bool {
 	trimmed := strings.TrimSpace(s)
-	trimmed = strings.ReplaceAll(s, "\n", "")
 	return len(trimmed) == 0
 }
 
@@ -575,7 +574,6 @@ func main() {
 				fmt.Printf("5 will let you start a listener on an address and port combo \n")
 				fmt.Printf("6 lets you clear the DB \n")
 				fmt.Printf("'help' will bring you to this menu \n")
-				break
 
 			case input == "1":
 				input = ""
@@ -736,7 +734,6 @@ func main() {
 					switch cmd {
 					case "exit":
 						det = false
-						break
 					default:
 						sig, err := sign(cmd)
 						if err != nil {
