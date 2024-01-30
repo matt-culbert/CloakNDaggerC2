@@ -795,9 +795,8 @@ func main() {
 				key = strings.ToLower(key)
 				if key != "yes" {
 					break
-				} else {
-					_, _ = remKey("UUID")
 				}
+				_, _ = remKey("UUID")
 
 			case input == "help":
 				input = ""
