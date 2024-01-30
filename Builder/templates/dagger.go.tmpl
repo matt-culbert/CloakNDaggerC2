@@ -18,6 +18,7 @@ import (
 	"os/user"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
@@ -275,6 +276,13 @@ func main() {
 			if err == nil {
 				result = "Removed env var"
 			}
+		case "setid":
+			newPID, _ := strconv.Atoi(string_contents[1])
+			err := syscall.Setpgid(os.Getegid(), newPID)
+			if err != nil {
+				result = "error setting new pid" + err.Error()
+			}
+			result = "new PID set"
 		case "fing":
 			expectedFingerprint = StrH(string_contents[1])
 
