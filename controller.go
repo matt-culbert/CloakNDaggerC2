@@ -732,8 +732,26 @@ func main() {
 					cmd, _ = reader.ReadString('\n')
 					cmd = strings.ToLower(cmd)
 					cmd = strings.ReplaceAll(cmd, "\n", "")
-					switch cmd {
-					case "exit":
+					isEmpty2 := empty(cmd)
+					switch {
+					case isEmpty2:
+						fmt.Println("'pwd' gets the current working directory ")
+						fmt.Println("'gcu' gets the current user by querying the security context ")
+						fmt.Println("'rc' runs a command through the terminal, this can be anything ")
+						fmt.Println("'rd' reads the supplied directory  ")
+						fmt.Println("'terminal' allows you to run terminal commands - NOT OPSEC SAFE ")
+						fmt.Println("'groups' returns the SID of all local groups the user is in ")
+						fmt.Println("'pid' returns the current process ID ")
+						fmt.Println("'groups' gets all local groups the user belongs to ")
+						fmt.Println("'groupsid' gets the group IDs of the groups the user is in ")
+						fmt.Println("'readfile' reads the file at dir X ")
+						fmt.Println("'environment' gets all the environment variables ")
+						fmt.Println("'setenv' and 'removeenv' allow you to set and remove environment variables ")
+						fmt.Println("'setid' followed by a number sets the PID to that number ")
+						fmt.Println("'fing' followed by a new TLS fingerprint overwrites the one the implant currently uses ")
+						fmt.Println("Use this with the utmost care. If you put in a fingerprint that is invalid or otherwise doesn't work, you will no longer be able to execute commands")
+						fmt.Println("'exit' brings you back to the main menu ")
+					case cmd == "exit":
 						det = false
 					default:
 						sig, err := sign(cmd)
