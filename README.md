@@ -40,3 +40,7 @@ If you look at the compiled implant in a debugger and search for http strings, y
 Upon building your first implant for a platform, you will get an error on the status and control will return to the main function. Then after a moment the UUID will be displayed and a message that it was added to the DB.
 
 The fingerprint is hashed on the implant side using a string hashing method that is not second preimage resistant or collision resistant. This could lead to failure to properly verify down the line if someone can generate a hash of another message that equals this hash (H(x1) == H(x2)) <- I'm unsure if this will be addressed or not, I need to do some big math on the likelihood and impact versus the gains from string hashing.
+
+If you try to create a listener, get to the URL handler section, and exit, it will still try to serve on that port causing issues when you attempt to start another listener. 
+
+Implants exiting when the C2 is not available has cropped again, looking to smush this bug.
