@@ -13,6 +13,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
@@ -130,9 +131,13 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 		return ResponseCode, err
 	}
 
+	ran := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rng := rand.New(ran)
+	randKey := fmt.Sprint(rng.Intn(256) + 1)
+
 	string_pem := string(pubPEM)
 	known_prefix := string_pem[:10]
-	enc_pem := xor([]byte(string_pem), []byte("1"))
+	enc_pem := xor([]byte(string_pem), []byte(randKey))
 	encb64 := base64.StdEncoding.EncodeToString(enc_pem)
 
 	// I'm banging my head against a wall trying to trim the fingerprint in golang
