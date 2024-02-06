@@ -10,6 +10,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -473,7 +474,37 @@ func dumpDB(UUID string) ([]string, error) {
 		return nil, err
 	}
 
-	return results.Res, nil
+	var imp []impInfo
+
+	for _, jstr := range results.Res {
+		parts := strings.Split(jstr, "{")
+		parts = strings.Split(jstr, "}")
+		parts = strings.Split(jstr, "\n")
+
+		for _, section := range parts {
+			if strings.HasPrefix(section, ",") {
+				section = strings.TrimPrefix(section, ",")
+			}
+			section = strings.ReplaceAll(section, ";", "")
+			section = strings.ReplaceAll(section, " ", "")
+			if strings.HasPrefix(section, "{") {
+				//fmt.Println(section)
+
+				var tempImp impInfo
+				// this HAS to not care about errors in order to properly marshal it
+				_ = json.Unmarshal([]byte(section), &tempImp)
+
+				imp = append(imp, tempImp)
+				//fmt.Println(imp.Command)
+				if tempImp.LastCheckIn != "" {
+					fmt.Println(tempImp.UUID, tempImp.LastCheckIn)
+				}
+			}
+
+		}
+	}
+
+	return nil, nil
 }
 
 func UUID_info(UUID string) (impInfo, error) {
@@ -569,7 +600,7 @@ func main() {
 				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
 				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
 				fmt.Printf("2 will bring you to the implant info menu where you can find the last command run and the result \n")
-				fmt.Printf("3 allows you to list all implants in the DB \n")
+				fmt.Printf("3 allows you to list all active implants in the DB \n")
 				fmt.Printf("4 allows you to interact with implants by setting commands \n")
 				fmt.Printf("5 will let you start a listener on an address and port combo \n")
 				fmt.Printf("6 lets you clear the DB \n")
@@ -665,25 +696,17 @@ func main() {
 			case input == "3":
 				input = ""
 				var key string
-				fmt.Printf("Lists all implants and deets \n")
-				fmt.Printf("Just need the key to search for, in most cases this will be UUID \n")
-				fmt.Printf("Type exit and hit return to leave at any time \n")
-				fmt.Printf("%sKey > %s", green, reset)
-				fmt.Scan(&key)
-				key = strings.ToLower(key)
-				if key == "exit" {
-					break
-				}
+				fmt.Printf("Lists all implants and their last check-in time \n")
 				// Marshal the res into a json struct array then pull out individual elements.
 				// The elements should be UUID and the last check-in time
 				switch key {
 				default:
-					key = strings.ToUpper(key)
-					res, err := dumpDB(key)
+					key = "UUID"
+					_, err := dumpDB(key)
 					if err != nil {
 						fmt.Print(err)
 					}
-					fmt.Println(res)
+					//fmt.Println(res)
 				}
 
 			case input == "4":
@@ -825,7 +848,7 @@ func main() {
 				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
 				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
 				fmt.Printf("2 will bring you to the implant info menu where you can find the last command run and the result \n")
-				fmt.Printf("3 will you to list all implants in the DB \n")
+				fmt.Printf("3 will you to list all active implants in the DB \n")
 				fmt.Printf("4 allows you to interact with implants by setting commands \n")
 				fmt.Printf("5 will let you start a listener on an address and port combo \n")
 				fmt.Printf("6 lets you clear the DB \n")
@@ -837,7 +860,7 @@ func main() {
 				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
 				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
 				fmt.Printf("2 will bring you to the implant info menu where you can find the last command run and the result \n")
-				fmt.Printf("3 allows you to list all implants in the DB \n")
+				fmt.Printf("3 allows you to list all active implants in the DB \n")
 				fmt.Printf("4 allows you to interact with implants by setting commands \n")
 				fmt.Printf("5 will let you start a listener on an address and port combo \n")
 				fmt.Printf("6 lets you clear the DB \n")
