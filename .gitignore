@@ -19,3 +19,5 @@ Listeners/controller
 API/API_Listener
 Builder/templates/testKeyRSA.pub
 commands.log
+profile.json
+CloakNDaggerC2

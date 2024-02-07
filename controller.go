@@ -31,6 +31,13 @@ import (
 
 var LogFile *os.File
 
+type profile struct {
+	ListenerIP   string `json:"listenerIP"`
+	ListenerPort string
+	ListenerGet  string
+	ListenerSend string
+}
+
 type impInfo struct {
 	UUID        string
 	Whoami      string
@@ -51,6 +58,88 @@ type impInfoStruct struct {
 	LastCheckIn string
 	Result      string
 	GotIt       int32
+}
+
+func ifexist(filepath string) bool {
+	_, err := os.Stat(filepath)
+	return !os.IsNotExist(err)
+}
+
+func openProfile() (settings profile, err error) {
+	red := "\033[31m"
+	blue := "\033[34m"
+	reset := "\033[0m"
+
+	mydir, _ := os.Getwd()
+
+	if ifexist(mydir + "/profile.json") {
+
+		content, err := os.ReadFile(mydir + "/profile.json")
+		contentstr := string(content)
+		contentstr = strings.TrimPrefix(contentstr, "\"")
+		contentstr = strings.TrimSuffix(contentstr, "\"")
+		content, err = base64.StdEncoding.DecodeString(contentstr)
+		if err != nil {
+			fmt.Print(err)
+		}
+
+		var prof profile
+
+		err = json.Unmarshal(content, &prof)
+		if err != nil {
+			fmt.Print(err)
+		}
+
+		return prof, err
+
+	} else {
+		file, _ := os.Create(mydir + "/profile.json")
+
+		var listener, port, send, receieve string
+
+		fmt.Println("Profile missing ")
+		fmt.Println("Creating a new one ")
+
+		fmt.Printf("%sThe listener will look like '192.168.1.233' or 'example.com' \n%s", blue, reset)
+		fmt.Printf("%sEnter the listener address you want to use >  %s", red, reset)
+		fmt.Scan(&listener)
+
+		fmt.Printf("%sChoose a port higher than 1024 \n%s", blue, reset)
+		fmt.Printf("%sEnter the port to use > %s", red, reset)
+		fmt.Scan(&port)
+
+		fmt.Printf("%sNow we need the URI to serve commands from \n%s", blue, reset)
+		fmt.Printf("%sThis needs to match your associated implant configuration \n%s", blue, reset)
+		fmt.Printf("%sURI to serve commands (This could be 'session' or anything)> %s", red, reset)
+		fmt.Scan(&send)
+
+		fmt.Printf("%sFinally we need to enter in the URI to receive results to \n%s", blue, reset)
+		fmt.Printf("%sThis needs to match your associated implant configuration \n%s", blue, reset)
+		fmt.Printf("%sURI to send results (This could be 'schema' or anything)> %s", red, reset)
+		fmt.Scan(&receieve)
+
+		vals := profile{
+			listener,
+			port,
+			send,
+			receieve,
+		}
+		fmt.Println(vals)
+		jdat, _ := json.Marshal(vals)
+
+		encoder := json.NewEncoder(file)
+
+		_ = encoder.Encode(jdat)
+
+		defer func() {
+			file.Sync()
+			file.Close()
+		}()
+
+		fmt.Printf(string(jdat))
+
+		return vals, nil
+	}
 }
 
 func initializeLogger() {
@@ -197,13 +286,14 @@ func UUID_info_func(UUID string) (impInfoStruct, error) {
 
 }
 
-func EnableServers(address, port, GetURI, PostURI string) (string, error) {
+func EnableServers(address, port, GetURI, PostURI string) {
 	//fmt.Printf("Will serve listener on address %s and port %s \n", address, port)
 
 	serverAddr := address + ":" + port
 	certFile := "server.crt"
 	keyFile := "server.key"
 
+	fmt.Println("Reading in server key pairs")
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		fmt.Printf("Error: %e \n", err)
@@ -218,6 +308,8 @@ func EnableServers(address, port, GetURI, PostURI string) (string, error) {
 		fmt.Printf("Error: %e \n", err)
 		os.Exit(1)
 	}
+	fmt.Printf("Bound to %s\n", serverAddr)
+	fmt.Printf("Serving on %s/%s\n", serverAddr, GetURI)
 
 	http.HandleFunc("/"+GetURI, func(w http.ResponseWriter, r *http.Request) {
 		// Session handles the implant requesting a command
@@ -253,16 +345,13 @@ func EnableServers(address, port, GetURI, PostURI string) (string, error) {
 	server := &http.Server{}
 
 	// The goroutine here allows us to serve the listeners and then move back to the main program
-	go func() error {
+	go func() {
 		err = server.Serve(listener)
 		if err != nil {
 			fmt.Printf("Error: %e\n", err)
-			return err
-			//os.Exit(1)
+			server.Shutdown(context.Background())
 		}
-		return nil
 	}()
-	return "0", nil
 
 }
 
@@ -304,14 +393,10 @@ func StartGRPCServers(wg *sync.WaitGroup, stopCh chan struct{}) {
 	<-stopCh
 }
 
-func startListener(address, port, GetURI, PostURI string) (string, error) {
-	fmt.Printf("Will attempt to serve on %s %s\n", address, port)
+func startListener(address, port, GetURI, PostURI string) {
+	fmt.Printf("Will attempt to serve on %s %s %s %s\n", address, port, GetURI, PostURI)
 
-	code, err := EnableServers(address, port, GetURI, PostURI)
-	if err != nil {
-		return code, err
-	}
-	return code, nil
+	EnableServers(address, port, GetURI, PostURI)
 
 }
 
@@ -500,7 +585,6 @@ func dumpDB(UUID string) ([]string, error) {
 					fmt.Println(tempImp.UUID, tempImp.LastCheckIn)
 				}
 			}
-
 		}
 	}
 
@@ -569,6 +653,11 @@ func empty(s string) bool {
 }
 
 func main() {
+	profSettings, err := openProfile()
+	if err != nil {
+		fmt.Print(err)
+		os.Exit(1)
+	}
 	initializeLogger()
 	defer initializeLogger()
 	var wg sync.WaitGroup
@@ -796,37 +885,43 @@ func main() {
 
 			case input == "5":
 				input = ""
-				var address, port, GetURI, PostURI string
-				fmt.Printf("Listeners \n")
-				fmt.Printf("Start a listener \n")
-				fmt.Println("Enter the listener address > ")
-				fmt.Scan(&address)
-				if address == "exit" {
-					break
-				}
-				fmt.Println("Enter the port to use > ")
-				fmt.Scan(&port)
-				if port == "exit" {
-					break
-				}
+				var newProfile string
+				fmt.Println("Use profile values? yes/no")
+				fmt.Scan(&newProfile)
+				newProfile = strings.ToLower(newProfile)
+				switch newProfile {
+				case "yes":
+					startListener(profSettings.ListenerIP, profSettings.ListenerPort, profSettings.ListenerGet, profSettings.ListenerSend)
 
-				fmt.Printf("%sNow we need the URI to serve commands from \n%s", blue, reset)
-				fmt.Printf("%sThis needs to match your associated implant configuration \n%s", blue, reset)
-				fmt.Printf("%sURI to serve commands (This could be 'session' or anything)> %s", red, reset)
-				fmt.Scan(&GetURI)
+				case "no":
+					input = ""
+					var address, port, GetURI, PostURI string
+					fmt.Printf("Listeners \n")
+					fmt.Printf("Start a listener \n")
+					fmt.Println("Enter the listener address > ")
+					fmt.Scan(&address)
+					if address == "exit" {
+						break
+					}
+					fmt.Println("Enter the port to use > ")
+					fmt.Scan(&port)
+					if port == "exit" {
+						break
+					}
 
-				fmt.Printf("%sFinally we need to enter in the URI to receive results to \n%s", blue, reset)
-				fmt.Printf("%sThis needs to match your associated implant configuration \n%s", blue, reset)
-				fmt.Printf("%sURI to send results (This could be 'schema' or anything)> %s", red, reset)
-				fmt.Scan(&PostURI)
-				code, err := startListener(address, port, GetURI, PostURI)
-				if err != nil {
-					fmt.Printf("Error: %e", err)
+					fmt.Printf("%sNow we need the URI to serve commands from \n%s", blue, reset)
+					fmt.Printf("%sThis needs to match your associated implant configuration \n%s", blue, reset)
+					fmt.Printf("%sURI to serve commands (This could be 'session' or anything)> %s", red, reset)
+					fmt.Scan(&GetURI)
+
+					fmt.Printf("%sFinally we need to enter in the URI to receive results to \n%s", blue, reset)
+					fmt.Printf("%sThis needs to match your associated implant configuration \n%s", blue, reset)
+					fmt.Printf("%sURI to send results (This could be 'schema' or anything)> %s", red, reset)
+					fmt.Scan(&PostURI)
+					startListener(address, port, GetURI, PostURI)
+
+					fmt.Println("Started")
 				}
-				if code != "0" {
-					fmt.Printf("Code error: %s \n", code)
-				}
-				fmt.Println("Started")
 
 			case input == "6":
 				input = ""

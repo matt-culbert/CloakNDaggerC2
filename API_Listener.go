@@ -195,6 +195,7 @@ func (s *RecieveImpUpdate) SendUpdate(ctx context.Context, in *pb.UpdateObject) 
 	//_ = client.Set(ctx, unmarshaled_data.UUID, ImpData, 0).Err()
 	err := client.HSet(ctx, "UUID", unmarshaled_data.UUID, ImpData).Err()
 	if err != nil {
+		fmt.Println(err)
 		fmt.Println("Error on HSet for client")
 		ResponseCode := &pb.ResponseCode{
 			Code: 1,
