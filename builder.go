@@ -10,10 +10,8 @@ package main
 import (
 	"context"
 	"embed"
-	"encoding/base64"
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
@@ -28,29 +26,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 )
-
-func xor(input, key []byte) []byte {
-	result := make([]byte, len(input))
-	keyLength := len(key)
-
-	for i := 0; i < len(input); i++ {
-		result[i] = input[i] ^ key[i%keyLength]
-	}
-	return result
-}
-
-func bruteforce(encrypted, knownPrefix []byte) []byte {
-	for k := 0; k < 256; k++ {
-		key := []byte{byte(k)}
-
-		decrypted := xor(encrypted, key)
-
-		if string(decrypted[:10]) == string(knownPrefix) {
-			return xor(encrypted, key)
-		}
-	}
-	return nil
-}
 
 func StrH(s string) uint32 {
 	var h uint32
@@ -83,7 +58,6 @@ type appValues struct {
 	UUID        string
 	Pubkey      string
 	ServerKey   string
-	Prefix      string
 	Fingerprint uint32
 	Sleep       int32  // Sleep is a simple int for defining the sleep in seconds
 	Jitter      int8   // The jitter is an int here but comes in as high/medium/low
@@ -131,14 +105,11 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 		return ResponseCode, err
 	}
 
-	ran := rand.New(rand.NewSource(time.Now().UnixNano()))
-	rng := rand.New(ran)
-	randKey := fmt.Sprint(rng.Intn(256) + 1)
-
 	string_pem := string(pubPEM)
-	known_prefix := string_pem[:10]
-	enc_pem := xor([]byte(string_pem), []byte(randKey))
-	encb64 := base64.StdEncoding.EncodeToString(enc_pem)
+	string_pem_no_newLines := strings.Replace(string_pem, "\n", "", -1)
+	// Here we need to trim the start and end from the string
+	string_pem_no_newLines = string_pem_no_newLines[:len(string_pem_no_newLines)-24]
+	string_pem_no_newLines = string_pem_no_newLines[26:]
 
 	// I'm banging my head against a wall trying to trim the fingerprint in golang
 	// let's do it in bash
@@ -162,14 +133,15 @@ func (s *Builder) StartBuilding(ctx context.Context, in *pb.BuildRoutine) (*pb.R
 	h1 := StrH(res)
 	values.Fingerprint = h1
 
+	//Here we need to trim the start and end from the string
+
 	values.CallBack = in.ListenerAddress
 	values.AppName = in.Name
 	values.UUID = uuid
-	values.Pubkey = encb64
+	values.Pubkey = string_pem_no_newLines
 	values.Sleep = in.Sleep
 	values.GetURL = in.GetURL
 	values.PostURL = in.PostURL
-	values.Prefix = known_prefix
 
 	switch in.Jitter {
 	case "high":
