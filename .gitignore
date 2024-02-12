@@ -21,3 +21,6 @@ Builder/templates/testKeyRSA.pub
 commands.log
 profile.json
 CloakNDaggerC2
+Builder/encryption_test.go
+Builder/templatesexample.go
+Builder/winfunc.go
