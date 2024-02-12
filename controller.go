@@ -400,6 +400,13 @@ func startListener(address, port, GetURI, PostURI string) {
 
 }
 
+func Xor(input []byte, randint int) string {
+	for i := 0; i < len(input); i++ {
+		input[i] ^= byte(randint)
+	}
+	return string(input)
+}
+
 func sign(command string) (string, error) {
 	command_bytes := []byte(command)
 	KeyPEM, err := os.ReadFile("global.pem")
@@ -441,6 +448,7 @@ func sign(command string) (string, error) {
 
 	/*==========================================*/
 	/*==========Test the message================*/
+	// If testing fails, an error is returned rather than the signature of the message
 
 	hash_test := sha256.Sum256(command_bytes)
 
