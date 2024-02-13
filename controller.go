@@ -400,6 +400,18 @@ func startListener(address, port, GetURI, PostURI string) {
 
 }
 
+func BfGuess(input, known []byte) string {
+	var found int
+	for i := 0; i < 257; i++ {
+		test := Xor(input[:2], i)
+		if test == string(known) {
+			found = i
+			break
+		}
+	}
+	return Xor(input, found)
+}
+
 func Xor(input []byte, randint int) string {
 	for i := 0; i < len(input); i++ {
 		input[i] ^= byte(randint)

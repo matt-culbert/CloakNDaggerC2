@@ -32,3 +32,12 @@ func TestXor(t *testing.T) {
 	}
 
 }
+
+func TestBfGuess(t *testing.T) {
+	have := "test"
+	want := "test"
+	got := BfGuess([]byte(have), []byte(have[:2]))
+	if got != want {
+		t.Errorf("got %q but wanted %q", got, want)
+	}
+}
