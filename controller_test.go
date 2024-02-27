@@ -41,3 +41,12 @@ func TestBfGuess(t *testing.T) {
 		t.Errorf("got %q but wanted %q", got, want)
 	}
 }
+
+func TestSanitizer(t *testing.T) {
+	have := "[]::;{}test"
+	want := "test"
+	got := Sanitizer(have)
+	if got != want {
+		t.Errorf("got %q but wanted %q", got, want)
+	}
+}

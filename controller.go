@@ -19,6 +19,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -149,6 +150,12 @@ func initializeLogger() {
 	}
 	log.SetOutput(LogFile)
 
+}
+
+func Sanitizer(input string) string {
+	re := regexp.MustCompile(`[\[\]{}:;]`)
+	stripped := re.ReplaceAllString(input, "")
+	return stripped
 }
 
 func SetIt(result, uuid string) (int32, error) {
@@ -317,7 +324,8 @@ func EnableServers(address, port, GetURI, PostURI string) {
 		// Need to use the UUID to get the command in the DB
 		UUID := r.Header.Get("APPSESSIONID")
 		UUID = strings.ToLower(UUID)
-		res, err := UUID_info_func(UUID)
+		strippedUUID := Sanitizer(UUID)
+		res, err := UUID_info_func(strippedUUID)
 
 		//fmt.Printf("Signature: %s, Command %s \n", res.Signature, res.Command)
 		if err == nil {
@@ -337,8 +345,10 @@ func EnableServers(address, port, GetURI, PostURI string) {
 		UUID = strings.ToLower(UUID)
 		Res, _ := io.ReadAll(r.Body)
 		formattedRes := string(Res)
+		strippedUUID := Sanitizer(UUID)
+		strippedRes := Sanitizer(formattedRes)
 
-		_, _ = SetIt(formattedRes, UUID)
+		_, _ = SetIt(strippedRes, strippedUUID)
 
 	})
 
