@@ -51,3 +51,4 @@ When you want to spread laterally, a simplistic view of this looks like sharing 
 
 ## TODO
 - [ ] Change how commands are sent. They should be of the format 0xffffffff
+- [ ] Put the client config in the overlay data of the PE
