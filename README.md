@@ -45,5 +45,9 @@ If you try to create a listener, get to the URL handler section, and exit, it wi
 
 Implants exiting when the C2 is not available has cropped again, looking to smush this bug.
 
+## Hard questions without easy answers
+
+When you want to spread laterally, a simplistic view of this looks like sharing your original implant with other machines and having it execute. This will generate a new UUID on each new host for check-in with. This won't work on CND since the UUID is generated server side to provide more control over new registrations. So how are you expected to spread laterally with CND? Downloading a new implant from the C2 for each execution isn't feasible. A potential solution is appending a secondary UUID to the primary for each new system it is executed on. This would allow you to revoke server side all children of that implant and prevent new ones from self registering if you wanted.
+
 ## TODO
 - [ ] Change how commands are sent. They should be of the format 0xffffffff

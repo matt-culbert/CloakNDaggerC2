@@ -19,8 +19,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/crypto/chacha20poly1305"
 )
 
 func DetermineGroups() ([]string, error) {
@@ -43,17 +41,6 @@ func StrH(s string) uint32 {
 		h = (h << 5) + uint32(c)
 	}
 	return h
-}
-
-func chacha(pass string, msg string) (enc_block []byte) {
-
-	key := sha256.Sum256([]byte(pass))
-	aead, _ := chacha20poly1305.NewX(key[:])
-
-	nonce := make([]byte, chacha20poly1305.NonceSizeX)
-	enc_block = aead.Seal(nil, nonce, []byte(msg), nil)
-	return
-
 }
 
 func terminal(command string) (res string) {
