@@ -44,3 +44,6 @@ The fingerprint is hashed on the implant side using a string hashing method that
 If you try to create a listener, get to the URL handler section, and exit, it will still try to serve on that port causing issues when you attempt to start another listener. 
 
 Implants exiting when the C2 is not available has cropped again, looking to smush this bug.
+
+## TODO
+- [ ] Change how commands are sent. They should be of the format 0xffffffff

@@ -61,6 +61,38 @@ type impInfoStruct struct {
 	GotIt       int32
 }
 
+const cmdHelp = `
+'pwd' gets the current working directory 
+'gcu' gets the current user by querying the security context 
+'rc' runs a command through the terminal, this can be anything 
+'rd' reads the supplied directory  
+'terminal' allows you to run terminal commands - NOT OPSEC SAFE 
+'groups' returns the SID of all local groups the user is in 
+'pid' returns the current process ID 
+'groups' gets all local groups the user belongs to 
+'groupsid' gets the group IDs of the groups the user is in 
+'readfile' reads the file at dir X 
+'environment' gets all the environment variables 
+'setenv' and 'removeenv' allow you to set and remove environment variables 
+'chdir' allows you to change to a specified directory 
+'change_get', 'change_post', and 'change_listener' all allow you to adjust the callback URI and listener for data transfer 
+'fing' followed by a new TLS fingerprint overwrites the one the implant currently uses 
+Use the above with the utmost care. If you put in data that is invalid or otherwise doesn't work, you will no longer be able to execute commands
+'exit' brings you back to the main menu 
+`
+
+const helpMenu = `
+Help menu
+The interpreter expects 1 - 5 for menu options 
+1 will bring you to the build menu where you can build an implant 
+2 will bring you to the implant info menu where you can find the last command run and the result
+3 will you to list all active implants in the DB 
+4 allows you to interact with implants by setting commands 
+5 will let you start a listener on an address and port combo 
+6 lets you clear the DB
+'help' will bring you to this menu
+`
+
 func ifexist(filepath string) bool {
 	_, err := os.Stat(filepath)
 	return !os.IsNotExist(err)
@@ -715,15 +747,7 @@ func main() {
 			switch {
 			case isEmpty:
 				input = ""
-				fmt.Printf("Help menu \n")
-				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
-				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
-				fmt.Printf("2 will bring you to the implant info menu where you can find the last command run and the result \n")
-				fmt.Printf("3 allows you to list all active implants in the DB \n")
-				fmt.Printf("4 allows you to interact with implants by setting commands \n")
-				fmt.Printf("5 will let you start a listener on an address and port combo \n")
-				fmt.Printf("6 lets you clear the DB \n")
-				fmt.Printf("'help' will bring you to this menu \n")
+				fmt.Print(helpMenu)
 
 			case input == "1":
 				input = ""
@@ -830,10 +854,6 @@ func main() {
 
 			case input == "4":
 				input = ""
-				// Need to get a signature
-				// Need to set that signature and command
-				// Need to then wait for the listener to update the db that the command was retrieved
-				// Then display the output
 
 				var cmd, uuid string
 				fmt.Printf("This is the menu for interacting with implants \n")
@@ -850,27 +870,9 @@ func main() {
 					fmt.Println("UUID doesn't exist")
 					break
 				}
+				fmt.Println("Press enter or type 'help' to see the command help menu")
 				det := true
 				for det {
-					fmt.Println("'pwd' gets the current working directory ")
-					fmt.Println("'gcu' gets the current user by querying the security context ")
-					fmt.Println("'rc' runs a command through the terminal, this can be anything ")
-					fmt.Println("'rd' reads the supplied directory  ")
-					fmt.Println("'terminal' allows you to run terminal commands - NOT OPSEC SAFE ")
-					fmt.Println("'groups' returns the SID of all local groups the user is in ")
-					fmt.Println("'pid' returns the current process ID ")
-					fmt.Println("'groups' gets all local groups the user belongs to ")
-					fmt.Println("'groupsid' gets the group IDs of the groups the user is in ")
-					fmt.Println("'readfile' reads the file at dir X ")
-					fmt.Println("'environment' gets all the environment variables ")
-					fmt.Println("'setenv' and 'removeenv' allow you to set and remove environment variables ")
-					fmt.Println("'setid' followed by a number sets the PID to that number // current broken")
-					fmt.Println("'chdir' allows you to change to a specified directory ")
-					fmt.Println("'change_get', 'change_post', and 'change_listener' all allow you to adjust the callback URI and listener for data transfer")
-					fmt.Println("'fing' followed by a new TLS fingerprint overwrites the one the implant currently uses ")
-					fmt.Println("Use these with the utmost care. If you put in data that is invalid or otherwise doesn't work, you will no longer be able to execute commands")
-					fmt.Println("'exit' brings you back to the main menu ")
-					fmt.Println()
 					fmt.Printf("%sCommand > %s", red, reset)
 					reader := bufio.NewReader(os.Stdin)
 					cmd, _ = reader.ReadString('\n')
@@ -879,26 +881,11 @@ func main() {
 					isEmpty2 := empty(cmd)
 					switch {
 					case isEmpty2:
-						fmt.Println("'pwd' gets the current working directory ")
-						fmt.Println("'gcu' gets the current user by querying the security context ")
-						fmt.Println("'rc' runs a command through the terminal, this can be anything ")
-						fmt.Println("'rd' reads the supplied directory  ")
-						fmt.Println("'terminal' allows you to run terminal commands - NOT OPSEC SAFE ")
-						fmt.Println("'groups' returns the SID of all local groups the user is in ")
-						fmt.Println("'pid' returns the current process ID ")
-						fmt.Println("'groups' gets all local groups the user belongs to ")
-						fmt.Println("'groupsid' gets the group IDs of the groups the user is in ")
-						fmt.Println("'readfile' reads the file at dir X ")
-						fmt.Println("'environment' gets all the environment variables ")
-						fmt.Println("'setenv' and 'removeenv' allow you to set and remove environment variables ")
-						fmt.Println("'setid' followed by a number sets the PID to that number // current broken")
-						fmt.Println("'chdir' allows you to change to a specified directory ")
-						fmt.Println("'change_get', 'change_post', and 'change_listener' all allow you to adjust the callback URI and listener for data transfer ")
-						fmt.Println("'fing' followed by a new TLS fingerprint overwrites the one the implant currently uses ")
-						fmt.Println("Use these with the utmost care. If you put in data that is invalid or otherwise doesn't work, you will no longer be able to execute commands")
-						fmt.Println("'exit' brings you back to the main menu ")
+						fmt.Print(cmdHelp)
 					case cmd == "exit":
 						det = false
+					case cmd == "help":
+						fmt.Print(cmdHelp)
 					default:
 						sig, err := sign(cmd)
 						if err != nil {
@@ -953,6 +940,9 @@ func main() {
 					startListener(address, port, GetURI, PostURI)
 
 					fmt.Println("Started")
+
+				default:
+					log.Println("Invalid option")
 				}
 
 			case input == "6":
@@ -971,27 +961,11 @@ func main() {
 
 			case input == "help":
 				input = ""
-				fmt.Printf("Help menu \n")
-				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
-				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
-				fmt.Printf("2 will bring you to the implant info menu where you can find the last command run and the result \n")
-				fmt.Printf("3 will you to list all active implants in the DB \n")
-				fmt.Printf("4 allows you to interact with implants by setting commands \n")
-				fmt.Printf("5 will let you start a listener on an address and port combo \n")
-				fmt.Printf("6 lets you clear the DB \n")
-				fmt.Printf("'help' will bring you to this menu \n")
+				fmt.Print(helpMenu)
 
 			default:
 				input = ""
-				fmt.Printf("Help menu \n")
-				fmt.Printf("The interpreter expects 1 - 5 for menu options \n")
-				fmt.Printf("1 will bring you to the build menu where you can build an implant \n")
-				fmt.Printf("2 will bring you to the implant info menu where you can find the last command run and the result \n")
-				fmt.Printf("3 allows you to list all active implants in the DB \n")
-				fmt.Printf("4 allows you to interact with implants by setting commands \n")
-				fmt.Printf("5 will let you start a listener on an address and port combo \n")
-				fmt.Printf("6 lets you clear the DB \n")
-				fmt.Printf("'help' will bring you to this menu \n")
+				fmt.Print(helpMenu)
 			}
 		}
 	}
