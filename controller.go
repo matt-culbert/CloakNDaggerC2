@@ -108,6 +108,9 @@ func openProfile() (settings profile, err error) {
 	if ifexist(mydir + "/profile.json") {
 
 		content, err := os.ReadFile(mydir + "/profile.json")
+		if err != nil {
+			fmt.Print(err)
+		}
 		contentstr := string(content)
 		contentstr = strings.TrimPrefix(contentstr, "\"")
 		contentstr = strings.TrimSuffix(contentstr, "\"")
@@ -169,7 +172,7 @@ func openProfile() (settings profile, err error) {
 			file.Close()
 		}()
 
-		fmt.Printf(string(jdat))
+		fmt.Print(string(jdat))
 
 		return vals, nil
 	}
@@ -621,28 +624,20 @@ func dumpDB(UUID string) ([]string, error) {
 		return nil, err
 	}
 
-	var imp []impInfo
 
 	for _, jstr := range results.Res {
-		parts := strings.Split(jstr, "{")
-		parts = strings.Split(jstr, "}")
-		parts = strings.Split(jstr, "\n")
+		parts := strings.Split(jstr, "\n")
 
 		for _, section := range parts {
-			if strings.HasPrefix(section, ",") {
-				section = strings.TrimPrefix(section, ",")
-			}
+			section = strings.TrimPrefix(section, ",")
 			section = strings.ReplaceAll(section, ";", "")
 			section = strings.ReplaceAll(section, " ", "")
 			if strings.HasPrefix(section, "{") {
-				//fmt.Println(section)
 
 				var tempImp impInfo
 				// this HAS to not care about errors in order to properly marshal it
 				_ = json.Unmarshal([]byte(section), &tempImp)
 
-				imp = append(imp, tempImp)
-				//fmt.Println(imp.Command)
 				if tempImp.LastCheckIn != "" {
 					fmt.Println(tempImp.UUID, tempImp.LastCheckIn)
 				}
