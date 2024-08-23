@@ -624,7 +624,6 @@ func dumpDB(UUID string) ([]string, error) {
 		return nil, err
 	}
 
-
 	for _, jstr := range results.Res {
 		parts := strings.Split(jstr, "\n")
 

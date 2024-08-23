@@ -13,32 +13,16 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// This program will be running and recieving the data marshalled by the proto file
-// We want to unmarshal it then load it into Redis
-
-// This works all well and good for adding test data
-// The next goal will be to :
-// 1) Setup a listening gRPC server
-// 2) Write the calls from there to the Redis DB
-// 3) Do this with SET and HSET - SET will be for historical context
-
 // The reason for this project is to abstract the complicated pieces of committing this to the DB away from the user
 // Now, applications just need to make a gRPC call to this service
 // Users can also query this service with whatever they want, adding the option for automation through Python scripts that can update the fields and read values
 
-// It's looking like we're going to need to move the Redis functions and associated data out of main
-// In main() we'll call the server, serve up the listener
-// In the listener function we'll ingest the sent data and return a status code
-// protoc --go-grpc_out=. dagger.proto
-// The above allowed us to generate go specific gRPC code, which included the service
-
-// The server runs and listens for incoming connections,
-// Now to write the test client to send the formatted data to be inserted
-// Then once that's tested and works good, we need to update the controller to use this
-// And the builder needs to be pointed to this
-
 type RecieveImpUpdate struct {
 	pb.UnimplementedUpdateRecordServer
+}
+
+type LogCmd struct {
+	pb.UnimplementedLogCmdServer
 }
 
 type hgetUUID struct {
@@ -78,6 +62,16 @@ type IIDScan struct {
 	Ignored     struct{} `redis:"-"`
 }
 
+type LogStruct struct {
+	UUID    string
+	TimeS   string
+	CmdSent string
+	Err1    string
+	TimeR   string
+	Recv    string
+	Err2    string
+}
+
 func (s *Rkey) RemKey(ctx context.Context, in *pb.DelKey) (*pb.ResponseCode, error) {
 	fmt.Println("Removing key")
 	client := redis.NewClient(&redis.Options{
@@ -103,6 +97,51 @@ func (s *Rkey) RemKey(ctx context.Context, in *pb.DelKey) (*pb.ResponseCode, err
 		// But for now we know the error occurs when HSet'ng so that's good enough
 		return ResponseCode, nil
 	}
+}
+
+func (s *LogCmd) LogCmd(ctx context.Context, in *pb.LogStruct) (*pb.ResponseCode, error) {
+	fmt.Println("Logging command sent/recieved")
+	/*
+		Function to log commands set and returned data
+		Will use database 1 since everything else uses 0
+		db layout:
+		master key* uuid | time | cmd_set | error (can be empty) | time | response | error (can be empty)
+	*/
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       1,
+	})
+
+	LogData, _ := json.Marshal(LogStruct{
+		UUID:    in.GetUUID(),
+		TimeS:   in.GetTimeS(),
+		CmdSent: in.GetCmdSent(),
+		Err1:    in.GetErr1(),
+		TimeR:   in.GetTimeR(),
+		Recv:    in.GetRecv(),
+		Err2:    in.GetErr2(),
+	})
+
+	err := client.HSet(ctx, "UUID", in.GetUUID(), LogData).Err()
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("Error on HSet for client")
+		ResponseCode := &pb.ResponseCode{
+			Code: 1,
+		}
+		return ResponseCode, nil
+	} else {
+		ResponseCode := &pb.ResponseCode{
+			Code: 0,
+		}
+		// We return the response code of the action to update the redisdb
+		// If success, we return a 0. If the operation to HSet fails, we return a 1
+		// Could possibly use a more verbose error message in the future
+		// But for now we know the error occurs when HSet'ng so that's good enough
+		return ResponseCode, nil
+	}
+
 }
 
 func (s *GetAll) GetAll(ctx context.Context, in *pb.GetKey) (*pb.DbContents, error) {

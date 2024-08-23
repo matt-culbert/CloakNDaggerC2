@@ -22,6 +22,16 @@ message UpdateObject {
     int32 GotIt = 8;
 }
 
+message LogStruct {
+    string UUID = 1;
+    string TimeS = 2;
+    string CmdSent = 3;
+    string Err1 = 4;
+    string TimeR = 5;
+    string Recv = 6;
+    string Err2 = 7;
+}
+
 message BuildRoutine {
     string Platform = 1;
 	string Architecture = 2;
@@ -71,4 +81,8 @@ service Builder {
 
 service UpdateRecord {
     rpc SendUpdate(UpdateObject) returns (ResponseCode) {}
+}
+
+service LogCmd {
+    rpc LogCmd(LogStruct) returns (ResponseCode) {}
 }
