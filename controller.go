@@ -50,15 +50,30 @@ type impInfo struct {
 	GotIt       int32
 }
 
-type impInfoStruct struct {
-	UUID        string
-	Whoami      string
-	Signature   string
-	Retrieved   int32
-	Command     string
-	LastCheckIn string
-	Result      string
-	GotIt       int32
+type impLayout struct {
+	platform, arch, name, listener, jitter, GetURI, PostURI string
+	sleep                                                   int32
+}
+
+func openConfig() (impconfig impLayout, err error) {
+
+	mydir, _ := os.Getwd()
+
+	if ifexist(mydir + "/imp_config.json") {
+		content, err := os.ReadFile(mydir + "/imp_config.json")
+		if err != nil {
+			fmt.Print(err)
+		}
+
+		err = json.Unmarshal(content, impconfig)
+		if err != nil {
+			fmt.Print(err)
+		}
+
+		return impconfig, err
+	}
+
+	return impconfig, err
 }
 
 var cmd_list = []string{"pwd", "gcu", "rc", "rd", "terminal", "groups", "pid", "groupsid", "readfile", "environment",
@@ -266,12 +281,12 @@ func SetIt(result, uuid string) (int32, error) {
 
 }
 
-func UUID_info_func(UUID string) (impInfoStruct, error) {
+func UUID_info_func(UUID string) (impInfo, error) {
 	// Takes a UUID as a string
 	// Returns either an empty struct and error or a full struct and no error
 	conn, err := grpc.Dial("localhost:50055", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
-		return impInfoStruct{}, err
+		return impInfo{}, err
 	}
 
 	defer conn.Close()
@@ -287,7 +302,7 @@ func UUID_info_func(UUID string) (impInfoStruct, error) {
 	preserved_field, err := pres.Hget(ctx, &pb.GetUUID{UUID: UUID})
 
 	if err != nil {
-		return impInfoStruct{}, err
+		return impInfo{}, err
 	}
 
 	preserved_result := preserved_field.Result
@@ -316,18 +331,18 @@ func UUID_info_func(UUID string) (impInfoStruct, error) {
 			Retrieved: 0, Command: preserved_command, LastCheckIn: currentTimeStr, Result: preserved_result,
 			GotIt: 1})
 		if err != nil {
-			return impInfoStruct{}, err
+			return impInfo{}, err
 		}
 
-		return impInfoStruct{}, nil
+		return impInfo{}, nil
 	}
 
 	res, err := c1.Hget(ctx, &pb.GetUUID{UUID: UUID})
 
 	if err != nil {
-		return impInfoStruct{}, err
+		return impInfo{}, err
 	}
-	return impInfoStruct{UUID: UUID,
+	return impInfo{UUID: UUID,
 		Whoami:      res.Whoami,
 		Signature:   res.Signature,
 		Retrieved:   res.Retrieved,
@@ -756,42 +771,43 @@ func main() {
 
 			case input == "1":
 				input = ""
-				var platform, arch, name, listener, jitter, GetURI, PostURI string
-				var sleep int32
+				impconfig, err := openConfig()
+				if err != nil {
+					fmt.Println(err)
+				}
+
 				fmt.Printf("Build menu \n")
 				fmt.Printf("This menu allows you to build a Dagger implant \n")
 				fmt.Printf("Type exit and hit return to leave at any time \n")
 				fmt.Printf("The builder expects, in order, the platform to compile for, the architecture, the output file name, and the listener address and port to use \n")
 				fmt.Printf("windows amd64 example https://test.culbertreport:8000 \n")
 				fmt.Printf("%sBuilder > %s", red, reset)
-				fmt.Scan(&platform, &arch, &name, &listener)
-				if platform == "exit" {
-					break
-				}
+				fmt.Scan(&impconfig.platform, &impconfig.arch, &impconfig.name, &impconfig.listener)
+
 				fmt.Printf("%sJitter (High, medium, low) > %s", red, reset)
-				fmt.Scan(&jitter)
+				fmt.Scan(&impconfig.jitter)
 
 				fmt.Printf("%sSleep (In seconds) > %s", red, reset)
-				fmt.Scan(&sleep)
+				fmt.Scan(&impconfig.sleep)
 
 				fmt.Printf("%sNow we need the URI to fetch commands from \n%s", blue, reset)
 				fmt.Printf("%sThis needs to match your listener configuration \n%s", blue, reset)
 				fmt.Printf("%sURI to GET command (This could be 'session' or anything)> %s", red, reset)
-				fmt.Scan(&GetURI)
+				fmt.Scan(&impconfig.GetURI)
 
 				fmt.Printf("%sFinally we need to enter in the URI to send results to \n%s", blue, reset)
 				fmt.Printf("%sThis needs to match your listener configuration \n%s", blue, reset)
 				fmt.Printf("%sURI to send results (This could be 'schema' or anything)> %s", red, reset)
-				fmt.Scan(&PostURI)
+				fmt.Scan(&impconfig.PostURI)
 
-				platform = strings.ToLower(platform)
-				arch = strings.ToLower(arch)
-				name = strings.ToLower(name)
-				listener = strings.ToLower(listener)
-				jitter = strings.ToLower(jitter)
-				switch platform {
+				impconfig.platform = strings.ToLower(impconfig.platform)
+				impconfig.arch = strings.ToLower(impconfig.arch)
+				impconfig.name = strings.ToLower(impconfig.name)
+				impconfig.listener = strings.ToLower(impconfig.listener)
+				impconfig.jitter = strings.ToLower(impconfig.jitter)
+				switch impconfig.platform {
 				case "windows", "linux", "darwin":
-					_, err := build(platform, arch, name, listener, jitter, GetURI, PostURI, sleep)
+					_, err := build(impconfig.platform, impconfig.arch, impconfig.name, impconfig.listener, impconfig.jitter, impconfig.GetURI, impconfig.PostURI, impconfig.sleep)
 					if err != nil {
 						fmt.Printf("error while building, %e", err)
 					}

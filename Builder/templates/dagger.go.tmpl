@@ -94,7 +94,7 @@ var expectedFingerprint uint32
 
 func main() {
 
-	pubKeyPEM := "-----BEGIN PUBLIC KEY-----\n{{.Pubkey}}\n-----END PUBLIC KEY-----"
+	pubKeyPEM := `-----BEGIN PUBLIC KEY-----\n{{.Pubkey}}\n-----END PUBLIC KEY-----`
 
 	callback := "{{.CallBack}}"
 	get := "{{.GetURL}}"
@@ -133,7 +133,7 @@ func main() {
 		},
 	}
 
-	for true {
+	for {
 		PEMBlock, _ := pem.Decode([]byte(pubKeyPEM))
 		if PEMBlock == nil {
 			os.Exit(0)
