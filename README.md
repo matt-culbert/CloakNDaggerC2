@@ -1,54 +1,89 @@
-# Cloak & Dagger
+### Before first use
+This covers the initial setup of required things like the Python requirements and how to generate a user.
 
-![logo](/img/guide/cnd8.jpg)
+Install required Python modules
+```bash
+pip install -r requirements.txt
+```
+Install required Go packages
+```bash
+cd ./Implant; go mod tidy
+```
+Generate a user by running the pw_hash.py script
+```bash
+python Server/pw_hash.py
+```
+Generate the SSL cert for the server to secure connections with
+```bash
+openssl req -new -x509 -keyout server.pem -out server.pem -days 365 -nodes
+```
 
-There are keys included here, they're purely for testing. You should expect these to be burned and thus generate your own.
+### Run the application
+1) First, start the server
+```bash
+python Server/server.py
+```
+2) After the server is started, start the client and enter the username/password you generated. The server needs to be run first since the client tries to authenticate after you enter your details.
+```bash
+python Client/client.py
+```
 
-If you're gonna skip running the install script to set everything up, you're gonna have a bad time. 
+### Powershell commands for simulating implant
+These have proven handy for emulating implant testing to the server without having to run an implant itself. 
+```powershell
+$postParams = @{"msg" = "7465:7374::"}
+$jsonPost = $postParams | ConvertTo-Json 
+$headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+$headers.Add('Content-type','Application/Json')
+Invoke-WebRequest -Uri http://127.0.0.1:5000/1234 -Method GET
+Invoke-WebRequest -Uri http://127.0.0.1:5000/1234 -Method POST -Body $jsonPost -Headers $headers
+```
 
-## So what is this?
+### Compiling Go exe
+You should read/use the Makefile.
+#### Makefile CLI arguments
+The make file takes arguments from the CLI under certain scenarios. When you're not building the default build, you need to pass in the METHOD, which tells make what communication mode to compile for.
+```bash
+make withLua METHOD=withHttp # Example to compile for HTTP comms
+```
+#### Compiling without the Makefile
+If you're curious about what's supported or you want to compile the implant manually, this covers it.
+There are tags and ldflags that setup things like the callback URLs, implant ID, and enable supported features.
+#### Compile flag options
+Most options are read from the implant config file. The one requiring input is the UUID to compile with.
+```bash
+# Implant UUID
+# Expects a random but unique 4 digit integer
+-X main.CompUUID 
+```
+#### Compile tag options
+```bash
+# Enable zlib compression
+withComp 
+# Enable support for Lua scripting
+withLua 
+# ----------------------
+# The next set of flags are required, use one of them
+# Use HTTP for communication
+withHttp
+# Use DNS for communication
+withDns
+```
+#### Syntax
+```bash
+go build -ldflags <ldflags> -tags <features> ./Implant/daemon
+```
+#### Example
+```bash
+go build -trimpath -ldflags "-X main.CompUUID=1234 -s -w" -tags "withComp withDns" ./preprocessor/daemon
+```
 
-Simply put, CloakNDagger is a framework designed around the use of public/private RSA key pairs to sign and authenticate commands being executed. This prevents MiTM interception of calls and ensures opsec during delicate operations. Any command sent to the implant to be executed must be signed and that signature must be verified before execution. The implant also uses fingerprinting of the listeners TLS certs in order to verify that they are indeed correct when every request for a command is sent. This is intended to be a redundant failure point, if one these checks stops working correctly you still have the other that you can rely on to verify authenticity.
-
-[A quote demonstrating exactly what I want to solve](https://assume-breach.medium.com/im-not-a-pentester-and-you-might-not-want-to-be-one-either-8b5701808dfc)
-
-> Here’s another thing, got a dope implant? Think you’re going to drop EXEs on a target? Think again. I wasn’t allowed to drop anything to disk when I was a pentester. Why? Because I “might” forget about them ...
-
-With CloakNDagger you can leave those implants running for the rest of time and, until someone breaks RSA, only you can send executable commands to them.
-
-Commands are primarily run through the os and os/user packages from Go. These allow you to perform many operations without needing to go through the command interpreter. This is because they have abstracted SYSCALLs away from the user and do the heavy lifting of implementing them for you. 
-
-## Requirements
-
-Go 1.20 +
-
-Docker
-
-The certs and PEM files are required, but like I said they should be considered burned. The global files are what are used for signing commands and authenticating the signature, then the server cert files are what are used for serving the TLS connection and verifying the fingerprint. 
-
-## Use
-
-Run redis in a Docker container with ```docker run --name redis -p 6379:6379 -d redis```
-
-When you run the install script on first use, this is started alongside it. But for the future starts, you'll need to make sure Docker is running redis.
-
-Once the script builds the main program, run it through ```./CloakNDaggerC2``` and voila everything starts up!
-
-## Known issues:
-If you look at the compiled implant in a debugger and search for http strings, you'll quickly find the listener address. This is because there is a non failing error to do with an incorrect header. Trying to fix that but for now it's a great point to analysts to look at and find C2's.
-
-Upon building your first implant for a platform, you will get an error on the status and control will return to the main function. Then after a moment the UUID will be displayed and a message that it was added to the DB.
-
-The fingerprint is hashed on the implant side using a string hashing method that is not second preimage resistant or collision resistant. This could lead to failure to properly verify down the line if someone can generate a hash of another message that equals this hash (H(x1) == H(x2)) <- I'm unsure if this will be addressed or not, I need to do some big math on the likelihood and impact versus the gains from string hashing.
-
-If you try to create a listener, get to the URL handler section, and exit, it will still try to serve on that port causing issues when you attempt to start another listener. 
-
-Implants exiting when the C2 is not available has cropped again, looking to smush this bug.
-
-## Hard questions without easy answers
-
-When you want to spread laterally, a simplistic view of this looks like sharing your original implant with other machines and having it execute. This will generate a new UUID on each new host for check-in with. This won't work on CND since the UUID is generated server side to provide more control over new registrations. So how are you expected to spread laterally with CND? Downloading a new implant from the C2 for each execution isn't feasible. A potential solution is appending a secondary UUID to the primary for each new system it is executed on. This would allow you to revoke server side all children of that implant and prevent new ones from self registering if you wanted.
-
-## TODO
-- [ ] Change how commands are sent. They should be of the format 0xffffffff
-- [ ] Put the client config in the overlay data of the PE
+### User customization
+Theres several profile options and listener options that can be configured.
+#### Pre-shared encryption keys
+- PSK1 is used for authenticating the HMACs sent by the server
+- PSK2 is used by the implant for generating authentication tokens
+  - These tokens are required for listeners set to require authentication before returning queued commands
+#### Custom listeners
+Users can define their own listeners by building a new Flask Blueprint in the Server/blueprints folder. An example is provided there for reference.
+After the new Blueprint is saved, add the route to the s_conf.json file and refresh the listeners.
