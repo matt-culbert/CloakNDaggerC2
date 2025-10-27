@@ -1,5 +1,5 @@
-### Before first use
-This covers the initial setup of required things like the Python requirements and how to generate a user.
+# Before first use
+This covers the initial setup of required things like the Python/Go requirements and how to generate a user.
 
 Install required Python modules
 ```bash
@@ -11,46 +11,30 @@ cd ./Implant; go mod tidy
 ```
 Generate a user by running the pw_hash.py script
 ```bash
-python Server/pw_hash.py
+cd ./Server; python pw_hash.py
 ```
 Generate the SSL cert for the server to secure connections with
 ```bash
-openssl req -new -x509 -keyout server.pem -out server.pem -days 365 -nodes
+cd ./Server; openssl req -new -x509 -keyout server.pem -out server.pem -days 365 -nodes
 ```
 
 ### Run the application
 1) First, start the server
 ```bash
-python Server/server.py
+cd ./Server; python server.py
 ```
 2) After the server is started, start the client and enter the username/password you generated. The server needs to be run first since the client tries to authenticate after you enter your details.
 ```bash
 python Client/client.py
 ```
 
-### Powershell commands for simulating implant
-These have proven handy for emulating implant testing to the server without having to run an implant itself. 
-```powershell
-$postParams = @{"msg" = "7465:7374::"}
-$jsonPost = $postParams | ConvertTo-Json 
-$headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
-$headers.Add('Content-type','Application/Json')
-Invoke-WebRequest -Uri http://127.0.0.1:5000/1234 -Method GET
-Invoke-WebRequest -Uri http://127.0.0.1:5000/1234 -Method POST -Body $jsonPost -Headers $headers
-```
+# Compiling the implant
+You should use the Makefile when compiling an implant. It has several requirements and these are laid out below.
 
-### Compiling Go exe
-You should read/use the Makefile.
-#### Makefile CLI arguments
-The make file takes arguments from the CLI under certain scenarios. When you're not building the default build, you need to pass in the METHOD, which tells make what communication mode to compile for.
-```bash
-make withLua METHOD=withHttp # Example to compile for HTTP comms
-```
-#### Compiling without the Makefile
-If you're curious about what's supported or you want to compile the implant manually, this covers it.
-There are tags and ldflags that setup things like the callback URLs, implant ID, and enable supported features.
-#### Compile flag options
-Most options are read from the implant config file. The one requiring input is the UUID to compile with.
+### Makefile arguments
+There are tags and ldflags that setup things like the callback URLs, implant ID, and enable supported features. Tags are also used to define what communication method to use. When the makefile is used, these are read from the implants config file.
+
+#### Compile flags
 ```bash
 # Implant UUID
 # Expects a random but unique 4 digit integer
@@ -62,20 +46,23 @@ Most options are read from the implant config file. The one requiring input is t
 withComp 
 # Enable support for Lua scripting
 withLua 
-# ----------------------
-# The next set of flags are required, use one of them
+```
+----------------------
+The next set of flags are required for determining which communication method to use
+```bash
 # Use HTTP for communication
 withHttp
 # Use DNS for communication
 withDns
 ```
-#### Syntax
+
+When not using the makefile, this looks like the following:
 ```bash
-go build -ldflags <ldflags> -tags <features> ./Implant/daemon
+go build -ldflags <ldflags> -tags <features> ./base_config/daemon
 ```
-#### Example
+OR
 ```bash
-go build -trimpath -ldflags "-X main.CompUUID=1234 -s -w" -tags "withComp withDns" ./preprocessor/daemon
+go build -trimpath -ldflags "-X main.CompUUID=1234 -s -w" -tags "withComp withDns" ./base_config/daemon
 ```
 
 ### User customization
