@@ -31,8 +31,8 @@ python Client/client.py
 # Compiling the implant
 You should use the Makefile when compiling an implant. It has several requirements and these are laid out below.
 
-### Makefile arguments
-There are tags and ldflags that setup things like the callback URLs, implant ID, and enable supported features. Tags are also used to define what communication method to use. When the makefile is used, these are read from the implants config file.
+### Required build arguments
+There are tags and ldflags that setup things like implant ID and enable supported features. Tags are also used to define what communication method to use. The implant relies on a configuration file for the rest of its settings. If compression is enabled, then this configuration file is saved as a bin. Otherwise, it is saved as a simple JSON struct.
 
 #### Compile flags
 ```bash
@@ -47,7 +47,6 @@ withComp
 # Enable support for Lua scripting
 withLua 
 ```
-----------------------
 The next set of flags are required for determining which communication method to use
 ```bash
 # Use HTTP for communication
